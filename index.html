@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#faf9f5" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#262624" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#262624">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap" rel="stylesheet">
 <title>Claude</title>
@@ -14,15 +13,12 @@
 <!-- This page holds no data and no keys. The key arrives once in the pairing link (#peer=...&key=...) and stays on the phone. -->
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
-  /* Claude's own look (13 Oct, Harsh: "Claude app style"): warm paper in light mode, warm charcoal in dark, one clay-orange
+  /* Claude's own look (13 Oct, Harsh: "Claude app style"): warm charcoal, one clay-orange
      orb that breathes while Claude thinks and swells with whoever is talking, and the words in a calm serif */
-  :root { --bg: #faf9f5; --surface: #f0eee6; --surface2: #e8e6dc; --line: #dedcd1; --text: #141413; --dim: #6f6d66;
-          --primary: #d97757; --onprimary: #ffffff; --tint: rgba(217,119,87,.14); --endbg: #c4422f; --ok: #d97757; --okfg: #fff;
-          --warn: #c8941f; --good: #4f8f5d; --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05); }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #262624; --surface: #30302e; --surface2: #3a3a37; --line: #474743; --text: #faf9f5; --dim: #a6a39a;
-            --tint: rgba(217,119,87,.18); --endbg: #d0533f; --warn: #e2b553; --good: #7fbf8c; --shadow: none; }
-  }
+  /* dark by default (13 Oct, Harsh); the warm charcoal and clay of Claude's dark theme */
+  :root { --bg: #262624; --surface: #30302e; --surface2: #3a3a37; --line: #474743; --text: #faf9f5; --dim: #a6a39a;
+          --primary: #d97757; --onprimary: #ffffff; --tint: rgba(217,119,87,.18); --endbg: #d0533f; --ok: #d97757; --okfg: #fff;
+          --warn: #e2b553; --good: #7fbf8c; --shadow: none; color-scheme: dark; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
                font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
