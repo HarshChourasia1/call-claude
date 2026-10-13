@@ -84,7 +84,7 @@
 </main>
 
 <form id="typeBar" class="hidden" autocomplete="off">
-  <input id="typed" placeholder="Type to Claude" enterkeyhint="send" aria-label="Type a message to Claude">
+  <input id="typed" placeholder="Type here if I mishear you" enterkeyhint="send" aria-label="Type a message to Claude">
   <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
 </form>
 
@@ -110,6 +110,11 @@
 <div id="sheet" class="hidden"><div class="panel">
   <div class="top"><strong>Transcript</strong><button id="closeSheet">Close</button></div>
   <div id="log"><div class="empty">Nothing said yet.</div></div>
+  <form id="sheetType" autocomplete="off" style="display:flex;gap:10px;padding-top:12px">
+    <input id="typed2" placeholder="Type to Claude" enterkeyhint="send" aria-label="Type a message to Claude"
+           style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:24px;color:var(--text);font:inherit;padding:12px 16px;outline:none;user-select:text">
+    <button type="submit" aria-label="Send" style="width:48px;height:48px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+  </form>
 </div></div>
 
 <audio id="remote" autoplay playsinline></audio>
@@ -142,7 +147,7 @@ function setState(s) {
 function showCallControls(on) {
   $('preCtl').classList.toggle('hidden', on);
   for (const id of ['kbCtl', 'muteCtl', 'endCtl']) $(id).classList.toggle('hidden', !on);
-  if (!on) $('typeBar').classList.add('hidden');
+  $('typeBar').classList.toggle('hidden', !on);   // always there during a call, for when speech gets it wrong
   document.body.classList.toggle('idle-pre', !on);
 }
 function line(who, text) {
@@ -263,18 +268,16 @@ function updateMute() {
   if (inCall) setState(claudeState);
 }
 $('mute').onclick = () => { muted = !muted; updateMute(); };
-$('kb').onclick = () => {
-  const bar = $('typeBar'); bar.classList.toggle('hidden');
-  $('kb').classList.toggle('on', !bar.classList.contains('hidden'));
-  if (!bar.classList.contains('hidden')) $('typed').focus();
-};
-$('typeBar').onsubmit = e => {   // typed text goes the same way as speech, skipping speech-to-text
-  e.preventDefault();
-  const text = $('typed').value.trim();
-  if (!text || !conn || !conn.open) return;
+$('kb').onclick = () => $('typed').focus();
+function sendTyped(input) {   // typed text goes the same way as speech, skipping speech-to-text
+  const text = input.value.trim();
+  if (!text) return;
+  if (!conn || !conn.open) { hint.textContent = 'Not connected: tap Call first.'; return; }
   conn.send({ t: 'type', text });
-  $('typed').value = '';
-};
+  input.value = '';
+}
+$('typeBar').onsubmit = e => { e.preventDefault(); sendTyped($('typed')); };
+$('sheetType').onsubmit = e => { e.preventDefault(); sendTyped($('typed2')); };
 $('history').onclick = () => $('sheet').classList.remove('hidden');
 $('closeSheet').onclick = () => $('sheet').classList.add('hidden');
 $('sheet').onclick = e => { if (e.target.id === 'sheet') $('sheet').classList.add('hidden'); };
