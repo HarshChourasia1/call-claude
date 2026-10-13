@@ -367,6 +367,7 @@ if (!GSR || h.get('autocall') === '1') stt = 'laptop';   // the PC's own test pl
 $('stt').value = stt;
 $('stt').onchange = () => { stt = $('stt').value; try { localStorage.setItem('call_stt', stt); } catch (e) {} hint.textContent = 'Takes effect on the next call.'; };
 let rec = null, recOn = false, recentClaude = [];
+var clipPlaying = false;
 const words = t => t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
 let speakingUntil = 0, lastFinal = '', lastFinalAt = 0, settling = '', settleTimer = null;
 function isEcho(text) {   // the phone's speaker can be heard by its own mic: ignore Claude's own recent words
@@ -383,7 +384,7 @@ function isRepeat(text) {   // Android sometimes delivers the same final result 
   return same;
 }
 function startRec() {
-  if (!GSR || stt !== 'google') return;
+  if (!GSR || stt !== 'google' || clipPlaying) return;
   if (!rec) {
     rec = new GSR(); rec.lang = 'en-IN'; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
     // Android marks every growing piece of a sentence as final ("I", "I have", "I have told"), so the flag is not
@@ -400,7 +401,7 @@ function startRec() {
         if (t && !isEcho(t) && !isRepeat(t) && conn && conn.open) conn.send({ t: 'said', text: t });
       }, 1200);
     };
-    rec.onend = () => { recOn = false; if (inCall && !muted && stt === 'google' && !document.hidden) setTimeout(startRec, 250); };
+    rec.onend = () => { recOn = false; if (inCall && !muted && stt === 'google' && !document.hidden && !clipPlaying) setTimeout(startRec, 250); };
     rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { hint.textContent = 'Google speech not allowed here: switch to the laptop in the sidebar.'; } };
   }
   if (!recOn) { try { rec.start(); recOn = true; } catch (e) {} }
@@ -411,7 +412,7 @@ function stopRec() { try { rec && rec.abort(); } catch (e) {} recOn = false; }
 // No live audio call in Google mode: Android keeps the mic in its normal, best mode (as when typing with the keyboard's
 // mic). Google stops listening while a clip plays, so it never hears Claude, and starts again right after.
 const clipEl = $('clip');
-let clips = [], clipPlaying = false;
+let clips = [];
 function onClip(m) {
   clips.push(URL.createObjectURL(new Blob([m.data], { type: 'audio/wav' })));
   if (!clipPlaying) nextClip();
