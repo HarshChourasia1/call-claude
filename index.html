@@ -272,7 +272,7 @@ async function call() {
     });
     conn.on('data', m => {
       if (m.t === 'line') { line(m.who, m.text); if (m.who === 'claude') { recentClaude.push(m.text); recentClaude = recentClaude.slice(-6); } }
-      else if (m.t === 'state') setState(m.s);
+      else if (m.t === 'state') { if (claudeState === 'speaking' && m.s !== 'speaking') speakingUntil = Date.now() + 1200; setState(m.s); }
     });
     conn.on('close', () => dropped());
   });
@@ -353,23 +353,37 @@ $('stt').value = stt;
 $('stt').onchange = () => { stt = $('stt').value; try { localStorage.setItem('call_stt', stt); } catch (e) {} hint.textContent = 'Takes effect on the next call.'; };
 let rec = null, recOn = false, recentClaude = [];
 const words = t => t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+let speakingUntil = 0, lastFinal = '', lastFinalAt = 0, settling = '', settleTimer = null;
 function isEcho(text) {   // the phone's speaker can be heard by its own mic: ignore Claude's own recent words
-  const w = words(text); if (w.length < 2) return false;
-  const pool = new Set(words(recentClaude.join(' ')));
-  return w.filter(x => pool.has(x)).length / w.length >= 0.7;
+  const w = words(text); if (!w.length) return true;
+  const pool = new Set(words(recentClaude.slice(-3).join(' ')));
+  const share = w.filter(x => pool.has(x)).length / w.length;
+  if (w.length <= 2) return share > 0;   // "sorry", "go on": one or two words Claude just said
+  // while Claude talks (and a second after), only clearly new words count as Harsh
+  return share >= (claudeState === 'speaking' || Date.now() < speakingUntil ? 0.4 : 0.7);
+}
+function isRepeat(text) {   // Android sometimes delivers the same final result twice
+  const same = text.toLowerCase() === lastFinal && Date.now() - lastFinalAt < 4000;
+  lastFinal = text.toLowerCase(); lastFinalAt = Date.now();
+  return same;
 }
 function startRec() {
   if (!GSR || stt !== 'google') return;
   if (!rec) {
     rec = new GSR(); rec.lang = 'en-IN'; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
+    // Android marks every growing piece of a sentence as final ("I", "I have", "I have told"), so the flag is not
+    // trusted: the latest text is shown as it grows and sent once it has not changed for 1.2 s.
     rec.onresult = e => {
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i], text = r[0].transcript.trim();
-        if (!text || isEcho(text)) continue;
-        caption.textContent = text; caption.className = 'me';
-        if (r.isFinal) { if (conn && conn.open) conn.send({ t: 'said', text }); }
-        else if (claudeState === 'speaking' && words(text).length >= 2) { if (conn && conn.open) conn.send({ t: 'interrupt' }); claudeState = 'idle'; }
-      }
+      const r = e.results[e.results.length - 1], text = r[0].transcript.trim();
+      if (!text || isEcho(text)) return;
+      caption.textContent = text; caption.className = 'me';
+      if (claudeState === 'speaking' && words(text).length >= 2) { if (conn && conn.open) conn.send({ t: 'interrupt' }); claudeState = 'idle'; }
+      settling = text;
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        const t = settling; settling = '';
+        if (t && !isEcho(t) && !isRepeat(t) && conn && conn.open) conn.send({ t: 'said', text: t });
+      }, 1200);
     };
     rec.onend = () => { recOn = false; if (inCall && !muted && stt === 'google' && !document.hidden) setTimeout(startRec, 250); };
     rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { hint.textContent = 'Google speech not allowed here: switch to the laptop in the sidebar.'; } };
