@@ -372,7 +372,7 @@ async function startVad() {
   vad = await lib.MicVAD.new({
     model: 'v5', baseAssetPath: VAD_BASE, onnxWASMBasePath: ORT_BASE, startOnLoad: false,
     getStream: getMic, resumeStream: getMic,   // resumeStream: unmute used vad-web's default (all processing on) before
-    positiveSpeechThreshold: 0.5, negativeSpeechThreshold: 0.35, redemptionMs: 600, preSpeechPadMs: 600, minSpeechMs: 250,
+    positiveSpeechThreshold: 0.5, negativeSpeechThreshold: 0.35, redemptionMs: 400, preSpeechPadMs: 600, minSpeechMs: 250,
     onSpeechStart: () => {
       if (!callEc && claudeTalking()) { cand = { at: Date.now(), cut: false, best: -99, after: 0, samples: 0, cutSamples: 0 }; return; }   // echo until shown otherwise
       cand = null;
