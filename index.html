@@ -229,7 +229,8 @@ let smooth = 0;
 const bars = [...document.querySelectorAll('#wave i')], shape = [0.6, 0.85, 1, 0.85, 0.6];
 function animate() {
   if (!inCall) { bars.forEach(b => { b.style.height = ''; }); document.body.classList.remove('talking'); return; }
-  const lvl = claudeState === 'speaking' ? levelOf(remoteLevel) * 2.2 : (muted ? 0 : levelOf(micLevel) * 3);
+  const lvl = clipPlaying ? 0.03 + 0.03 * Math.abs(Math.sin(Date.now() / 160))
+            : claudeState === 'speaking' ? levelOf(remoteLevel) * 2.2 : (muted ? 0 : levelOf(micLevel) * 3);
   smooth = smooth * 0.6 + Math.min(lvl * 8, 1) * 0.4;
   if (claudeState !== 'thinking') bars.forEach((b, i) => { b.style.height = (6 + smooth * 30 * shape[i] * (0.8 + Math.random() * 0.4)) + 'px'; });
   document.body.classList.toggle('talking', smooth > 0.08);
@@ -240,7 +241,7 @@ function animate() {
 // the phone streams its microphone like any call app; the PC decides when Harsh has finished and when he cuts in
 async function call() {
   setState('connecting'); hint.textContent = '';
-  actx = new AudioContext(); clipSrc = null;
+  actx = new AudioContext();
   if (stt !== 'google') {   // laptop mode: stream the microphone; Google mode: one mic user at a time, so none here
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
@@ -410,7 +411,7 @@ function stopRec() { try { rec && rec.abort(); } catch (e) {} recOn = false; }
 // No live audio call in Google mode: Android keeps the mic in its normal, best mode (as when typing with the keyboard's
 // mic). Google stops listening while a clip plays, so it never hears Claude, and starts again right after.
 const clipEl = $('clip');
-let clips = [], clipPlaying = false, clipSrc = null;
+let clips = [], clipPlaying = false;
 function onClip(m) {
   clips.push(URL.createObjectURL(new Blob([m.data], { type: 'audio/wav' })));
   if (!clipPlaying) nextClip();
@@ -422,7 +423,6 @@ function nextClip() {
     return;
   }
   clipPlaying = true; stopRec(); setState('speaking');
-  if (actx && !clipSrc) { try { clipSrc = actx.createMediaElementSource(clipEl); remoteLevel = actx.createAnalyser(); remoteLevel.fftSize = 1024; clipSrc.connect(remoteLevel); remoteLevel.connect(actx.destination); } catch (e) {} }
   const url = clips.shift();
   clipEl.src = url;
   clipEl.onended = () => { URL.revokeObjectURL(url); nextClip(); };
