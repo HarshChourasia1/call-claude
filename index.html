@@ -22,17 +22,32 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
                font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  body { display: flex; flex-direction: column; height: 100dvh; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  body { display: flex; flex-direction: row; height: 100dvh; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) env(safe-area-inset-left); }
   button { font: inherit; color: inherit; }
   .hidden { display: none !important; }
   .serif { font-family: "Source Serif 4", "Noto Serif", Georgia, serif; }
 
-  .bar { display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 6px; flex-shrink: 0; }
-  .icon-btn { width: 44px; height: 44px; border: 0; background: none; border-radius: 12px; display: grid; place-items: center; cursor: pointer; color: var(--dim); }
+  /* the icon rail on the left, always there (14 Oct, Harsh): replaces the hamburger sidebar */
+  #rail { width: 56px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 12px;
+          border-right: 1px solid var(--surface); overflow-y: auto; }
+  #main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .nav { position: relative; width: 44px; height: 44px; flex-shrink: 0; border: 0; border-radius: 12px; background: none; color: var(--dim);
+         display: grid; place-items: center; cursor: pointer; }
+  .nav svg { width: 22px; height: 22px; }
+  .nav:active { background: var(--surface); }
+  .nav.active { background: var(--surface2); color: var(--primary); }
+  .nav .badge { position: absolute; top: 2px; right: 1px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--primary);
+                color: var(--onprimary); font-size: 10px; font-weight: 600; line-height: 16px; text-align: center; }
+  .nav .badge:empty { display: none; }
+  #navSettings { margin-top: auto; }
+
+  .bar { display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 6px 0 14px; flex-shrink: 0; }
+  .icon-btn { width: 44px; height: 44px; flex-shrink: 0; border: 0; background: none; border-radius: 12px; display: grid; place-items: center; cursor: pointer; color: var(--dim); }
   .icon-btn:active { background: var(--surface); }
   .icon-btn svg { width: 22px; height: 22px; }
-  .bar .title { flex: 1; padding-left: 4px; font-family: "Source Serif 4", "Noto Serif", Georgia, serif; font-size: 20px; font-weight: 500; }
-  #updateChip, #onCallChip { margin-right: 4px; border: 0; border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+  .bar .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                font-family: "Source Serif 4", "Noto Serif", Georgia, serif; font-size: 20px; font-weight: 500; }
+  #updateChip, #onCallChip { margin-right: 2px; border: 0; border-radius: 999px; padding: 6px 10px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
   #updateChip { background: var(--tint); color: var(--primary); }
   #onCallChip { background: var(--primary); color: var(--onprimary); }
 
@@ -55,7 +70,7 @@
   #name { display: none; }
   #status { margin-top: 28px; color: var(--dim); font-size: 14px; min-height: 20px; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
   #wave { display: none; }
-  #caption { flex: 1; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 8px 32px;
+  #caption { flex: 1; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 8px 20px;
              text-align: center; font-family: "Source Serif 4", "Noto Serif", Georgia, serif; font-size: 23px; line-height: 1.38; }
   #caption.me { color: var(--dim); font-style: italic; }
   #hint { text-align: center; color: var(--dim); font-size: 13px; min-height: 18px; padding: 0 16px; }
@@ -89,21 +104,15 @@
           display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 500; box-shadow: 0 8px 24px -8px rgba(217,119,87,.7); }
   #call svg { width: 22px; height: 22px; }
 
-  /* sidebar */
-  #scrim { position: fixed; inset: 0; background: rgba(20,20,19,.4); z-index: 9; }
-  #drawer { position: fixed; top: 0; bottom: 0; left: 0; width: min(84vw, 320px); background: var(--bg); z-index: 10;
-            border-right: 1px solid var(--line); padding: calc(env(safe-area-inset-top) + 14px) 10px 16px; transform: translateX(-105%);
-            transition: transform .22s ease; display: flex; flex-direction: column; }
-  #drawer.open { transform: none; }
-  #drawer h2 { font-family: "Source Serif 4", "Noto Serif", Georgia, serif; font-size: 22px; font-weight: 500; margin: 6px 14px 14px; }
-  .nav { display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 14px; border-radius: 10px; border: 0; background: none;
-         width: 100%; text-align: left; font-size: 15px; cursor: pointer; margin-bottom: 2px; }
-  .nav svg { width: 20px; height: 20px; color: var(--dim); }
-  .nav:active { background: var(--surface); }
-  .nav.active { background: var(--surface2); }
-  .nav.active svg { color: var(--primary); }
-  .nav .badge { margin-left: auto; font-size: 12px; color: var(--primary); }
-  #drawer select { background: var(--surface) !important; border: 1px solid var(--line) !important; }
+  /* settings */
+  .set-select { display: block; width: 100%; height: 42px; margin-top: 8px; border-radius: 10px; background: var(--surface2); color: var(--text);
+                border: 0; padding: 0 10px; font: inherit; font-size: 15px; }
+  .switch { -webkit-appearance: none; appearance: none; width: 46px; height: 28px; margin: 0; border-radius: 14px; background: var(--line);
+            position: relative; flex-shrink: 0; cursor: pointer; transition: background .15s; }
+  .switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--text);
+                   transition: transform .15s; }
+  .switch:checked { background: var(--primary); }
+  .switch:checked::after { transform: translateX(18px); }
 
   .section { margin-top: 18px; }
   .section h3 { font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin: 0 4px 8px; }
@@ -129,8 +138,17 @@
 </style>
 </head>
 <body>
+<nav id="rail" aria-label="Sections">
+  <button class="nav active" data-view="call" aria-label="Call"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button>
+  <button class="nav" data-view="brain" aria-label="Brain"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V8h14zM7 10h5v5H7z"/></svg><span class="badge" id="b-brain"></span></button>
+  <button class="nav" data-view="approvals" aria-label="Approvals"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9z"/></svg><span class="badge" id="b-approvals"></span></button>
+  <button class="nav" data-view="desks" aria-label="Desks"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg></button>
+  <button class="nav" data-view="mis" aria-label="MIS"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></button>
+  <button class="nav" data-view="connectors" aria-label="Connectors"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg></button>
+  <button class="nav" id="navSettings" data-view="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94a7.3 7.3 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7 7 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2.4h-3.84a.5.5 0 0 0-.49.42l-.36 2.54a7.3 7.3 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.61.22L2.66 8.88a.5.5 0 0 0 .12.64l2.03 1.58a7.3 7.3 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .61.22l2.39-.96c.5.39 1.05.71 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.84a.5.5 0 0 0 .49-.42l.36-2.54a7 7 0 0 0 1.63-.94l2.39.96a.5.5 0 0 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+</nav>
+<div id="main">
 <div class="bar">
-  <button class="icon-btn" id="menu" aria-label="Open the sidebar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
   <span class="title" id="barTitle">Claude</span>
   <button id="onCallChip" class="hidden">On call 0:00</button>
   <button id="updateChip" class="hidden">Update ready</button>
@@ -174,20 +192,18 @@
 
 <section class="view hidden" id="v-panel"><div class="scroll" id="panelBody"></div></section>
 
-<div id="scrim" class="hidden"></div>
-<nav id="drawer" aria-label="Sidebar">
-  <h2>Claude</h2>
-  <button class="nav active" data-view="call"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>Call</button>
-  <button class="nav" data-view="brain"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V8h14zM7 10h5v5H7z"/></svg>Brain<span class="badge" id="b-brain"></span></button>
-  <button class="nav" data-view="approvals"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9z"/></svg>Approvals<span class="badge" id="b-approvals"></span></button>
-  <button class="nav" data-view="desks"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg>Desks</button>
-  <button class="nav" data-view="mis"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>MIS</button>
-  <button class="nav" data-view="connectors"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg>Connectors</button>
-  <div style="margin-top:auto;padding:12px 16px;color:var(--dim);font-size:13px">
-    <label>Speech recognition<br><select id="stt" style="margin-top:6px;width:100%;height:40px;border-radius:8px;background:var(--surface2);color:var(--text);border:0;padding:0 8px;font:inherit">
-      <option value="laptop">Parakeet, on the laptop</option><option value="google">Google, on the phone</option></select></label>
+<section class="view hidden" id="v-settings"><div class="scroll">
+  <div class="section"><h3>Listening</h3>
+    <div class="card"><label for="stt">Speech recognition</label>
+      <select id="stt" class="set-select"><option value="laptop">Parakeet, on the laptop</option><option value="google">Google, on the phone</option></select></div>
+    <div class="card">
+      <div class="row"><label for="ec">Echo cancelling (for loudspeaker)</label><input type="checkbox" id="ec" class="switch" role="switch"></div>
+      <div class="sub">Off gives clearer words; tap the screen to cut Claude off. On is the old phone-call sound, for a loud speaker.</div>
+    </div>
+    <div class="refresh">Changes take effect on the next call.</div>
   </div>
-</nav>
+</div></section>
+</div>
 
 <div id="sheet" class="hidden"><div class="panel">
   <div class="grab"></div>
@@ -215,11 +231,12 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 const $ = id => document.getElementById(id);
 const statusEl = $('status'), hint = $('hint'), caption = $('caption'), log = $('log'), remote = $('remote');
 let peer = null, conn = null, stream = null, actx = null, wake = null, claudeState = 'idle', inCall = false, muted = false;
-let micLevel = null, remoteLevel = null, callStart = 0, currentView = 'call';
+let micLevel = null, remoteLevel = null, callStart = 0, currentView = 'call', speakEnd = 0;
 
 // ---------------------------------------------------------------- call screen
 function fmt(s) { return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); }
 function setState(s) {
+  if (claudeState === 'speaking' && s !== 'speaking') speakEnd = Date.now();   // the echo gate keeps a short tail after this
   claudeState = s;
   const word = { idle: 'Listening', listening: 'Listening', thinking: 'Thinking', speaking: 'Speaking', connecting: 'Calling...', ready: 'Ready to call', dropped: 'Reconnecting...' }[s] || s;
   statusEl.textContent = inCall ? `${fmt((Date.now() - callStart) / 1000)}  ·  ${muted ? 'Muted' : word}` : word;
@@ -287,20 +304,99 @@ function wav16(f32) {
   return b;
 }
 const vsend = m => { try { if (conn && conn.open) conn.send(m); } catch (e) {} };
+
+// The microphone. Echo cancelling is OFF by default (14 Oct): with it on, Android switches the mic into its "phone call"
+// mode, which cuts the high sounds (energy above 3.4 kHz fell to ~0.2% of the total vs ~2.5% for clean speech), so
+// consonants were lost ("what's pending" -> "what spending"). Noise suppression and gain control stay off too (they blur
+// word edges). The settings switch "Echo cancelling" (callEc) brings back the old phone-call mic for a loud speaker.
+// What Android actually gave is sent to the PC's log once per call ("phone: mic ...").
+let micNote = '', micNoteSent = false;
+function reportMic(s, askedEc) {
+  try {
+    const st = s.getAudioTracks()[0].getSettings();
+    micNote = `mic ec ${st.echoCancellation} ns ${st.noiseSuppression} agc ${st.autoGainControl} rate ${st.sampleRate} ch ${st.channelCount} (asked ec ${askedEc ? 'on' : 'off'})`;
+  } catch (e) { micNote = 'mic settings unknown'; }
+  micNoteSent = false; sendMicNote();
+}
+function sendMicNote() { if (micNote && !micNoteSent && conn && conn.open) { micNoteSent = true; dbg(micNote); } }
+function getMic() {
+  const ec = callEc;
+  return navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: ec, noiseSuppression: false, autoGainControl: false } })
+    .then(s => { reportMic(s, ec); return s; });
+}
+
+// ---- the echo gate (echo cancelling off): Claude's voice from the loudspeaker reaches the microphone.
+// While Claude speaks (and ECHO_TAIL_MS after), ordinary sound is not sent at all. The gate learns how loud Claude's echo
+// is in the mic (echoBase, frame RMS while Claude speaks) and counts a speech start as Harsh cutting in only when the
+// level over the last CUTIN_WIN_MS is CUTIN_DB above that echo. Speech that keeps going AFTER_ECHO_MS past the end of
+// Claude's voice (and its tail) is his too: there is no echo left by then. Anything else is dropped (no vstart, no seg).
+// Tapping the screen is the sure way to cut in. The PC's own echo-text check stays as a safety net.
+const ECHO_TAIL_MS = 400, CUTIN_DB = 10, CUTIN_WIN_MS = 300, AFTER_ECHO_MS = 300, ECHO_FLOOR = 0.002, ECHO_LEARN_FRAMES = 8;
+let callEc = false, echoBase = 0, echoN = 0, cand = null, recentRms = [], frameLen = 512;
+function claudeTalking() { return claudeState === 'speaking' || Date.now() - speakEnd < ECHO_TAIL_MS; }
+function overEcho() {   // dB of the last CUTIN_WIN_MS of the mic above Claude's echo
+  const mean = recentRms.reduce((a, r) => a + r[1], 0) / Math.max(1, recentRms.length);
+  return 20 * Math.log10(Math.max(mean, 1e-6) / Math.max(echoBase, ECHO_FLOOR));
+}
+function cutInByVoice(why) {
+  cand.cut = true; cand.cutSamples = cand.samples;
+  vsend({ t: 'vstart' });   // the PC pauses Claude and checks the words, as before
+  if (claudeState !== 'speaking') setState('listening');
+  dbg('cut-in by voice: ' + why);
+}
+function gateFrame(probs, frame, rms) {
+  const now = Date.now(), ms = frame.length / 16;
+  frameLen = frame.length;
+  if (cand) cand.samples += frame.length;   // frames after the speech start, to find the cut-in point in the recording
+  recentRms.push([now, rms]); while (recentRms.length && now - recentRms[0][0] > CUTIN_WIN_MS) recentRms.shift();
+  const talking = claudeTalking();
+  if (talking && !(cand && cand.cut)) {   // learn the echo level without learning his voice:
+    const base = Math.max(echoBase, ECHO_FLOOR);   // during a speech stretch a frame 6 dB over the echo is skipped (may be him);
+    if (echoN < ECHO_LEARN_FRAMES) { echoBase = (echoBase * echoN + rms) / (echoN + 1); echoN++; }   // otherwise capped at +10 dB
+    else if (!cand || rms <= base * 2) { echoBase = echoBase * 0.99 + Math.min(rms, base * 3.16) * 0.01; echoN++; }
+  }
+  if (!cand || cand.cut) return;
+  if (talking) {
+    if (now - cand.at >= CUTIN_WIN_MS - 40 && echoN >= ECHO_LEARN_FRAMES) {
+      const db = overEcho(); cand.best = Math.max(cand.best, db);
+      if (db >= CUTIN_DB) cutInByVoice(`+${db.toFixed(1)} dB over echo`);
+    }
+  } else {   // Claude's voice has ended: no echo any more, so speech still going on is him
+    if (probs && probs.isSpeech >= 0.5) cand.after += ms;
+    if (cand.after >= AFTER_ECHO_MS) cutInByVoice('kept talking after Claude stopped');
+  }
+}
+
 async function startVad() {
   const lib = await loadVad();
   vad = await lib.MicVAD.new({
     model: 'v5', baseAssetPath: VAD_BASE, onnxWASMBasePath: ORT_BASE, startOnLoad: false,
-    // echo cancelling stays on (so Claude's voice on the speaker is not taken as his); the other two processing steps
-    // are off, as speech-recognition makers advise (they blur word edges)
-    getStream: () => navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: false, autoGainControl: false } }),
+    getStream: getMic, resumeStream: getMic,   // resumeStream: unmute used vad-web's default (all processing on) before
     positiveSpeechThreshold: 0.5, negativeSpeechThreshold: 0.35, redemptionMs: 600, preSpeechPadMs: 600, minSpeechMs: 250,
-    onSpeechStart: () => { vsend({ t: 'vstart' }); if (claudeState !== 'speaking') setState('listening'); },
-    onVADMisfire: () => vsend({ t: 'vmiss' }),
-    onSpeechEnd: audio => { vsend({ t: 'seg', wav: wav16(audio) }); },
+    onSpeechStart: () => {
+      if (!callEc && claudeTalking()) { cand = { at: Date.now(), cut: false, best: -99, after: 0, samples: 0, cutSamples: 0 }; return; }   // echo until shown otherwise
+      cand = null;
+      vsend({ t: 'vstart' }); if (claudeState !== 'speaking') setState('listening');
+    },
+    onVADMisfire: () => { cand = null; vsend({ t: 'vmiss' }); },
+    onSpeechEnd: audio => {
+      const c = cand; cand = null;
+      if (c && !c.cut) {   // Claude's own voice (or a noise) while it spoke: dropped; vmiss so nothing on the PC waits
+        vsend({ t: 'vmiss' });
+        dbg(`echo dropped: ${(audio.length / 16000).toFixed(1)} s, best ${c.best > -99 ? (c.best >= 0 ? '+' : '') + c.best.toFixed(1) + ' dB' : 'not measured'}, echo ${echoBase.toFixed(4)}`);
+        return;
+      }
+      let a = audio;
+      if (c && c.cut) {   // echo had kept the detector open before he cut in: send from just before the cut-in, not the echo
+        const cutAt = audio.length - c.samples - frameLen + c.cutSamples, from = Math.floor(cutAt - (CUTIN_WIN_MS + 600) * 16);
+        if (from > 8000) { a = audio.subarray(from); dbg(`cut-in recording trimmed: ${(a.length / 16000).toFixed(1)} of ${(audio.length / 16000).toFixed(1)} s kept`); }
+      }
+      vsend({ t: 'seg', wav: wav16(a) });
+    },
     onFrameProcessed: (probs, frame) => {
       let sum = 0; for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
       vadLevel = Math.sqrt(sum / frame.length);
+      if (!callEc) gateFrame(probs, frame, vadLevel);
     },
   });
 }
@@ -310,6 +406,7 @@ async function call() {
   setState('connecting'); hint.textContent = '';
   actx = new AudioContext();
   useVad = false;
+  callEc = ecOn; echoBase = 0; echoN = 0; cand = null; recentRms = []; micNote = ''; micNoteSent = false;   // a fresh echo gate per call
   if (stt === 'laptop' && h.get('stream') !== '1') {
     try { await startVad(); useVad = true; }
     catch (e) { hint.textContent = 'Speech detector did not load; streaming the microphone instead.'; try { vad && vad.destroy(); } catch (x) {} vad = null; }
@@ -318,6 +415,7 @@ async function call() {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     } catch (e) { hint.textContent = 'Microphone blocked: allow it for this page.'; setState('ready'); wantCall = false; return; }
+    reportMic(stream, true);
     stream.getAudioTracks().forEach(t => { t.enabled = !muted; });
     micLevel = actx.createAnalyser(); micLevel.fftSize = 1024;
     actx.createMediaStreamSource(stream).connect(micLevel);
@@ -344,10 +442,11 @@ async function call() {
     conn.on('open', () => {
       conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1', stt, redial: !!redialing, clips: false, vad: useVad });
       if (useVad && !muted) vad.start();
+      sendMicNote();
       lastData = Date.now(); watchIce(conn.peerConnection);
       if (!callStart) callStart = Date.now();
       inCall = true; showCallControls(true); setState('idle');
-      hint.textContent = stt === 'google' ? 'Tap the screen to cut Claude off.' : ''; animate();
+      hint.textContent = 'Tap the screen to cut Claude off.'; animate();
       setTimeout(() => { if (hint.textContent.startsWith('Tap the screen')) hint.textContent = ''; }, 6000);
       if (!muted && !clipPlaying) startRec();
     });
@@ -460,7 +559,11 @@ const GSR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let stt = 'laptop'; try { stt = localStorage.getItem('call_stt2') || 'laptop'; } catch (e) {}
 if (!GSR || h.get('autocall') === '1') stt = 'laptop';   // the PC's own test plays a recording into a fake microphone
 $('stt').value = stt;
-$('stt').onchange = () => { stt = $('stt').value; try { localStorage.setItem('call_stt2', stt); } catch (e) {} hint.textContent = 'Takes effect on the next call.'; };
+$('stt').onchange = () => { stt = $('stt').value; try { localStorage.setItem('call_stt2', stt); } catch (e) {} };
+// Settings switch "Echo cancelling (for loudspeaker)": off by default; on brings back the old phone-call mic and full duplex
+let ecOn = false; try { ecOn = localStorage.getItem('call_ec') === '1'; } catch (e) {}
+$('ec').checked = ecOn;
+$('ec').onchange = () => { ecOn = $('ec').checked; try { localStorage.setItem('call_ec', ecOn ? '1' : '0'); } catch (e) {} };
 let rec = null, recOn = false, recentClaude = [];
 var clipPlaying = false;
 const words = t => t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
@@ -498,7 +601,7 @@ function startRec() {
       }, 1200);
     };
     rec.onend = () => { recOn = false; if (inCall && !muted && stt === 'google' && !document.hidden && !clipPlaying) setTimeout(startRec, 250); };
-    rec.onerror = e => { dbg('speech error ' + e.error); if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { hint.textContent = 'Google speech not allowed here: switch to the laptop in the sidebar.'; } };
+    rec.onerror = e => { dbg('speech error ' + e.error); if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { hint.textContent = 'Google speech not allowed here: switch to the laptop in Settings.'; } };
   }
   if (!recOn) { try { rec.start(); recOn = true; } catch (e) {} }
 }
@@ -535,25 +638,39 @@ function cutIn() {   // tap while Claude talks: stop it and listen
   if (conn && conn.open) conn.send({ t: 'interrupt' });
   setState('idle'); if (!muted) startRec();
 }
-$('v-call').addEventListener('click', e => { if (!e.target.closest('button, input, select, form')) cutIn(); });
+// live call audio (the default): a tap on the call screen while Claude speaks is a sure cut-in, whatever the mic heard
+function tapCut() {
+  if (!inCall || !(claudeState === 'speaking' || (cand && !cand.cut))) return;
+  vsend({ t: 'interrupt' });   // the PC stops Claude and notes what he heard of the answer
+  setState('idle');   // the echo gate's tail starts now; speech that goes on after it is his
+  hint.textContent = 'Stopped. Go ahead.';
+  setTimeout(() => { if (hint.textContent === 'Stopped. Go ahead.') hint.textContent = ''; }, 3000);
+  dbg('cut-in by tap');
+}
+$('v-call').addEventListener('click', e => {
+  if (e.target.closest('button, input, select, form, label')) return;
+  if (clipPlaying) cutIn(); else tapCut();
+});
 
-// ---------------------------------------------------------------- sidebar: Harsh's mods, read from the PC
+// ---------------------------------------------------------------- icon rail: Harsh's mods, read from the PC
 let side = null, sideConn = null, sideReady = null;
-const titles = { call: 'Claude', brain: 'Brain', approvals: 'Approvals', desks: 'Desks', mis: 'MIS', connectors: 'Connectors' };
-function openDrawer(on) { $('drawer').classList.toggle('open', on); $('scrim').classList.toggle('hidden', !on); }
-$('menu').onclick = () => openDrawer(true);
-$('scrim').onclick = () => openDrawer(false);
+const titles = { call: 'Claude', brain: 'Brain', approvals: 'Approvals', desks: 'Desks', mis: 'MIS', connectors: 'Connectors', settings: 'Settings' };
 $('onCallChip').onclick = () => show('call');
-document.querySelectorAll('.nav').forEach(b => b.onclick = () => { openDrawer(false); show(b.dataset.view); });
+document.querySelectorAll('.nav').forEach(b => b.onclick = () => show(b.dataset.view));
 
 function show(view) {
   currentView = view;
-  document.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  document.querySelectorAll('.nav').forEach(b => {
+    const on = b.dataset.view === view;
+    b.classList.toggle('active', on);
+    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
   $('barTitle').textContent = titles[view];
   $('v-call').classList.toggle('hidden', view !== 'call');
-  $('v-panel').classList.toggle('hidden', view === 'call');
+  $('v-settings').classList.toggle('hidden', view !== 'settings');
+  $('v-panel').classList.toggle('hidden', view === 'call' || view === 'settings');
   $('onCallChip').classList.toggle('hidden', !inCall || view === 'call');
-  if (view !== 'call') loadPanel(view);
+  if (view !== 'call' && view !== 'settings') loadPanel(view);
 }
 
 // its own quiet link to the PC, so the sidebar works without a call
@@ -599,7 +716,7 @@ function onPanelData(m) {
   if (d == null) { body.appendChild(el('div', 'empty', 'Nothing to show.')); return; }
   if (m.what === 'brain') {
     const n = (d.groups || []).find(g => g.label === 'Overdue');
-    $('b-brain').textContent = n ? n.items.length + ' overdue' : '';
+    $('b-brain').textContent = n && n.items.length ? String(n.items.length) : '';   // overdue count on the rail icon
     if (d.meetings && d.meetings.length) body.appendChild(section('Meetings', d.meetings, textCard));
     (d.groups || []).forEach(g => body.appendChild(section(`${g.label} (${g.items.length})`, g.items, textCard)));
     if (d.todo && d.todo.length) body.appendChild(section(`To do today (${d.todo.length})`, d.todo, textCard));
