@@ -425,8 +425,11 @@ function nextClip() {
   clipPlaying = true; stopRec(); setState('speaking');
   const url = clips.shift();
   clipEl.src = url;
-  clipEl.onended = () => { URL.revokeObjectURL(url); nextClip(); };
-  clipEl.play().catch(() => nextClip());
+  let done = false;
+  const finish = () => { if (done) return; done = true; clearTimeout(guard); URL.revokeObjectURL(url); nextClip(); };
+  const guard = setTimeout(finish, 20000);   // a clip that never ends must not stop the listening for good
+  clipEl.onended = finish; clipEl.onerror = finish;
+  clipEl.play().catch(finish);
 }
 function cutIn() {   // tap while Claude talks: stop it and listen
   if (!clipPlaying) return;
