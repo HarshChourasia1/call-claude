@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#141413">
+<meta name="theme-color" content="#1a1918">
 <title>Call Claude</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
@@ -11,36 +11,107 @@
 <!-- This page holds no data and no keys. The key arrives once in the pairing link (#peer=...&key=...) and stays on the phone. -->
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
-  :root { --bg: #141413; --card: #1f1e1d; --text: #f0eee6; --dim: #9c9a92; --accent: #d97757; --end: #e5484d; --live: #46a758; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  body { display: flex; flex-direction: column; padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom); }
-  header { padding: 14px 0 6px; display: flex; justify-content: space-between; align-items: baseline; }
-  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
-  #state { font-size: 13px; color: var(--dim); }
-  #state.live { color: var(--live); }
-  #log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 0 16px; }
-  .line { background: var(--card); border-radius: 14px; padding: 9px 12px; max-width: 90%; }
-  .harsh { align-self: flex-end; background: #2b2a27; color: var(--dim); }
-  #empty { color: var(--dim); text-align: center; margin: auto 0; }
-  #bar { padding: 12px 0 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  #btn { width: 120px; height: 120px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font: 600 17px system-ui, sans-serif;
-         box-shadow: 0 6px 24px rgba(0,0,0,.35); cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  #btn.on { background: var(--end); }
-  #meter { width: 160px; height: 6px; border-radius: 3px; background: #2b2a27; overflow: hidden; }
-  #meter i { display: block; height: 100%; width: 0; background: var(--live); transition: width .08s; }
-  #hint { color: var(--dim); font-size: 13px; min-height: 18px; text-align: center; }
-  #pair { margin: auto; text-align: center; color: var(--dim); max-width: 320px; }
+  :root { --bg: #1a1918; --panel: #262523; --line: #34322f; --text: #f0eee6; --dim: #9c9a92; --accent: #d97757; --accent2: #e8a07f;
+          --end: #e5484d; --ok: #46a758; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+               overflow: hidden; user-select: none; }
+  body { display: flex; flex-direction: column; height: 100dvh; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px 0; }
+  header .who { font-weight: 600; font-size: 17px; }
+  #state { font-size: 14px; color: var(--dim); }
+  #state.live { color: var(--accent2); }
+  #history { background: none; border: 0; color: var(--dim); font: inherit; font-size: 14px; padding: 6px 0; cursor: pointer; }
+
+  #stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; padding: 0 24px; min-height: 0; }
+  #orbWrap { position: relative; width: 210px; height: 210px; display: grid; place-items: center; }
+  #halo { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(217,119,87,.35) 0%, rgba(217,119,87,0) 70%);
+          transform: scale(1); transition: transform .12s ease-out, opacity .3s; opacity: .7; }
+  #orb { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f3b896 0%, var(--accent) 45%, #a8502f 100%);
+         box-shadow: 0 10px 50px rgba(217,119,87,.35); transform: scale(1); transition: transform .1s ease-out, filter .3s; }
+  .thinking #orb { animation: think 1.6s ease-in-out infinite; }
+  .muted #orb { filter: grayscale(.85) brightness(.7); }
+  .idle-pre #orb { filter: saturate(.8); animation: breathe 3.2s ease-in-out infinite; }
+  @keyframes think { 0%, 100% { transform: scale(.92); filter: brightness(.9); } 50% { transform: scale(1.0); filter: brightness(1.15); } }
+  @keyframes breathe { 0%, 100% { transform: scale(.96); } 50% { transform: scale(1.02); } }
+  #caption { min-height: 4.4em; max-width: 520px; text-align: center; font-size: 19px; line-height: 1.45; color: var(--text);
+             display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; transition: opacity .25s; }
+  #caption.me { color: var(--dim); font-size: 17px; }
+  #hint { min-height: 20px; font-size: 14px; color: var(--dim); text-align: center; }
+
+  #controls { display: flex; justify-content: center; align-items: center; gap: 34px; padding: 18px 20px 30px; }
+  .round { width: 66px; height: 66px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
+           background: var(--panel); color: var(--text); transition: background .15s, transform .08s; }
+  .round:active { transform: scale(.94); }
+  .round svg { width: 28px; height: 28px; }
+  .round.on { background: var(--text); color: var(--bg); }
+  #end { background: var(--end); color: #fff; width: 74px; height: 74px; }
+  #call { width: 84px; height: 84px; background: var(--ok); color: #fff; }
+  .label { font-size: 12px; color: var(--dim); text-align: center; margin-top: 6px; }
+  .ctl { display: flex; flex-direction: column; align-items: center; }
+  .hidden { display: none !important; }
+
+  #typeBar { display: flex; gap: 10px; padding: 0 16px 16px; }
+  #typeBar input { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; color: var(--text);
+                   font: inherit; padding: 12px 16px; outline: none; user-select: text; }
+  #typeBar input:focus { border-color: var(--accent); }
+  #typeBar button { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; display: grid; place-items: center; }
+  #typeBar button svg { width: 22px; height: 22px; }
+
+  #sheet { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-end; z-index: 5; }
+  #sheet .panel { width: 100%; max-height: 75dvh; background: var(--panel); border-radius: 18px 18px 0 0; padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+                  display: flex; flex-direction: column; }
+  #sheet .top { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; }
+  #sheet .top button { background: none; border: 0; color: var(--accent2); font: inherit; }
+  #log { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; user-select: text; }
+  .line { background: var(--bg); border-radius: 14px; padding: 9px 12px; max-width: 88%; font-size: 15px; }
+  .line.harsh { align-self: flex-end; background: var(--line); color: var(--text); }
+  .empty { color: var(--dim); text-align: center; padding: 20px 0; }
+  #pair { margin: auto; text-align: center; color: var(--dim); max-width: 320px; padding: 24px; }
 </style>
 </head>
-<body>
-<header><h1>Call Claude</h1><span id="state">not connected</span></header>
-<div id="log"><div id="empty">Tap Call and just talk.<br>Pause when you are done; Claude answers out loud.<br>Talk over it any time to interrupt.</div></div>
-<div id="bar">
-  <button id="btn">Call</button>
-  <div id="meter"><i></i></div>
+<body class="idle-pre">
+<header>
+  <span class="who">Claude</span>
+  <span id="state">Ready</span>
+  <button id="history" aria-label="Show what was said">Transcript</button>
+</header>
+
+<main id="stage">
+  <div id="orbWrap"><div id="halo"></div><div id="orb" aria-hidden="true"></div></div>
+  <div id="caption">Tap the green button and just talk.</div>
   <div id="hint"></div>
+</main>
+
+<form id="typeBar" class="hidden" autocomplete="off">
+  <input id="typed" placeholder="Type to Claude" enterkeyhint="send" aria-label="Type a message to Claude">
+  <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+</form>
+
+<div id="controls">
+  <div class="ctl" id="preCtl">
+    <button id="call" class="round" aria-label="Call Claude"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button>
+    <div class="label">Call</div>
+  </div>
+  <div class="ctl hidden" id="kbCtl">
+    <button id="kb" class="round" aria-label="Type instead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M7.5 14h9"/></svg></button>
+    <div class="label">Type</div>
+  </div>
+  <div class="ctl hidden" id="muteCtl">
+    <button id="mute" class="round" aria-label="Mute"><svg id="micIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/><path id="slash" class="hidden" d="M4 4l16 16"/></svg></button>
+    <div class="label" id="muteLabel">Mute</div>
+  </div>
+  <div class="ctl hidden" id="endCtl">
+    <button id="end" class="round" aria-label="End call"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 9c-2.3 0-4.5.4-6.6 1.1a1 1 0 0 0-.7 1V14a1 1 0 0 0 1.2 1l2.6-.5a1 1 0 0 0 .8-1v-1.7a12.6 12.6 0 0 1 5.4 0v1.7a1 1 0 0 0 .8 1l2.6.5a1 1 0 0 0 1.2-1v-2.9a1 1 0 0 0-.7-1A21.4 21.4 0 0 0 12 9z"/></svg></button>
+    <div class="label">End</div>
+  </div>
 </div>
+
+<div id="sheet" class="hidden"><div class="panel">
+  <div class="top"><strong>Transcript</strong><button id="closeSheet">Close</button></div>
+  <div id="log"><div class="empty">Nothing said yet.</div></div>
+</div></div>
+
 <audio id="remote" autoplay playsinline></audio>
 <script>
 'use strict';
@@ -55,38 +126,62 @@ if (!PEER || !KEY) { document.body.innerHTML = '<div id="pair">Not paired yet. O
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 const $ = id => document.getElementById(id);
-const btn = $('btn'), stateEl = $('state'), hint = $('hint'), log = $('log'), remote = $('remote'), bar = $('meter').firstChild;
-let peer = null, conn = null, stream = null, actx = null, wake = null, claudeState = 'idle', inCall = false;
+const stateEl = $('state'), hint = $('hint'), caption = $('caption'), log = $('log'), remote = $('remote');
+const orb = $('orb'), halo = $('halo');
+let peer = null, conn = null, stream = null, actx = null, wake = null, claudeState = 'idle', inCall = false, muted = false;
+let micLevel = null, remoteLevel = null;
 
-function setState(text, live) { stateEl.textContent = text; stateEl.className = live ? 'live' : ''; }
+// ---- screen states
+function setState(s) {
+  claudeState = s;
+  const text = { idle: 'Listening', listening: 'Listening', thinking: 'Thinking', speaking: 'Speaking', connecting: 'Connecting', ready: 'Ready', dropped: 'Reconnecting' }[s] || s;
+  stateEl.textContent = muted && inCall ? 'Muted' : text;
+  stateEl.className = inCall ? 'live' : '';
+  document.body.classList.toggle('thinking', s === 'thinking');
+}
+function showCallControls(on) {
+  $('preCtl').classList.toggle('hidden', on);
+  for (const id of ['kbCtl', 'muteCtl', 'endCtl']) $(id).classList.toggle('hidden', !on);
+  if (!on) $('typeBar').classList.add('hidden');
+  document.body.classList.toggle('idle-pre', !on);
+}
 function line(who, text) {
-  $('empty')?.remove();
+  log.querySelector('.empty')?.remove();
   const d = document.createElement('div'); d.className = 'line ' + who; d.textContent = text;
   log.appendChild(d); log.scrollTop = log.scrollHeight;
+  caption.textContent = text; caption.className = who === 'harsh' ? 'me' : '';
 }
 
-// The phone only streams the microphone, like any call app, so Android keeps the call going with the screen locked.
-// The PC listens for when Harsh has finished speaking (and for him cutting in) on its side of the call.
-function meter() {   // the level bar while the screen is on
-  if (!inCall || !actx) return;
-  const a = new Float32Array(analyser.fftSize); analyser.getFloatTimeDomainData(a);
+// ---- the orb follows whoever is talking: Claude's voice while it speaks, Harsh's microphone otherwise
+function levelOf(an) {
+  if (!an) return 0;
+  const a = new Float32Array(an.fftSize); an.getFloatTimeDomainData(a);
   let sum = 0; for (const x of a) sum += x * x;
-  bar.style.width = Math.min(100, Math.sqrt(sum / a.length) / 0.05 * 100) + '%';
-  requestAnimationFrame(meter);
+  return Math.sqrt(sum / a.length);
 }
-let analyser = null;
+let smooth = 0;
+function animate() {
+  if (!inCall) { orb.style.transform = ''; halo.style.transform = ''; return; }
+  const lvl = claudeState === 'speaking' ? levelOf(remoteLevel) * 2.2 : (muted ? 0 : levelOf(micLevel) * 3);
+  smooth = smooth * 0.7 + Math.min(lvl * 6, 0.45) * 0.3;
+  if (claudeState !== 'thinking') orb.style.transform = `scale(${1 + smooth})`;
+  halo.style.transform = `scale(${1 + smooth * 1.8})`;
+  requestAnimationFrame(animate);
+}
 
-// ---- the call
+// ---- the call: the phone streams its microphone like any call app (so it keeps going with the screen locked);
+// the PC listens for when Harsh has finished speaking and for him cutting in
 async function call() {
-  btn.disabled = true; hint.textContent = 'Connecting...';
+  setState('connecting'); hint.textContent = '';
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-  } catch (e) { hint.textContent = 'Microphone blocked: allow it for this page.'; btn.disabled = false; return; }
+  } catch (e) { hint.textContent = 'Microphone blocked: allow it for this page.'; setState('ready'); wantCall = false; return; }
+  stream.getAudioTracks().forEach(t => { t.enabled = !muted; });
   actx = new AudioContext();
-  analyser = actx.createAnalyser(); analyser.fftSize = 1024;
-  actx.createMediaStreamSource(stream).connect(analyser);
+  micLevel = actx.createAnalyser(); micLevel.fftSize = 1024;
+  actx.createMediaStreamSource(stream).connect(micLevel);
   try { wake = await navigator.wakeLock?.request('screen'); } catch (e) {}
-  if ('mediaSession' in navigator) {   // shows as an ongoing call in the notification shade, and keeps audio focus
+  if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({ title: 'Call with Claude', artist: 'Claude', artwork: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' }] });
   }
 
@@ -97,24 +192,28 @@ async function call() {
   });
   peer.on('call', c => {
     c.answer(stream);   // the microphone goes to the PC as live call audio (echo-cancelled by the phone)
-    c.on('stream', s => { remote.srcObject = s; remote.play().catch(() => {}); });
+    c.on('stream', s => {
+      remote.srcObject = s; remote.play().catch(() => {});
+      try { remoteLevel = actx.createAnalyser(); remoteLevel.fftSize = 1024; actx.createMediaStreamSource(s).connect(remoteLevel); } catch (e) {}
+    });
   });
   peer.on('open', () => {
     conn = peer.connect(PEER, { reliable: true });
     conn.on('open', () => {
       conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1' });
-      inCall = true; btn.disabled = false; btn.className = 'on'; btn.textContent = 'End';
-      setState('on call', true); hint.textContent = 'Talk any time; you can lock the screen.';
-      meter();
+      inCall = true; showCallControls(true); setState('idle');
+      hint.textContent = redialing ? '' : 'Talk any time. You can lock the screen.';
+      setTimeout(() => { if (hint.textContent.startsWith('Talk any')) hint.textContent = ''; }, 5000);
+      animate();
     });
     conn.on('data', m => {
       if (m.t === 'line') line(m.who, m.text);
-      else if (m.t === 'state') { claudeState = m.s; setState(m.s === 'idle' ? 'on call' : m.s, true); hint.textContent = m.s === 'listening' ? 'Listening...' : ''; }
+      else if (m.t === 'state') setState(m.s);
     });
     conn.on('close', () => dropped());
   });
   peer.on('disconnected', () => dropped());
-  setTimeout(() => { if (!inCall && peer) { hint.textContent = 'The PC did not answer. Is it on?'; hangup(false); } }, 20000);
+  setTimeout(() => { if (!inCall && peer && !redialing) { hint.textContent = 'The PC did not answer. Is it on?'; hangup(false); } }, 20000);
 }
 
 // The link dropped but Harsh did not press End (Android paused the page, the network changed): call back by itself,
@@ -123,10 +222,14 @@ let wantCall = false, redialing = null;
 function dropped() {
   if (!wantCall || redialing) return;
   hangup(false, true);
-  hint.textContent = 'Line dropped. Calling back...';
+  setState('dropped'); hint.textContent = 'Line dropped. Calling back...';
   let tries = 0;
   redialing = setInterval(() => {
-    if (!wantCall || inCall || ++tries > 40) { clearInterval(redialing); redialing = null; if (!inCall && wantCall) hint.textContent = 'Could not call back. Tap Call.'; return; }
+    if (!wantCall || inCall || ++tries > 40) {
+      clearInterval(redialing); redialing = null;
+      if (!inCall && wantCall) { hint.textContent = 'Could not call back. Tap Call.'; wantCall = false; setState('ready'); }
+      return;
+    }
     if (!peer && !document.hidden) call();
   }, 3000);
 }
@@ -144,12 +247,38 @@ function hangup(tell = true, keepWanting = false) {
   try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
   try { actx && actx.close(); } catch (e) {}
   try { wake && wake.release(); } catch (e) {}
-  remote.srcObject = null; bar.style.width = '0';
-  btn.disabled = false; btn.className = ''; btn.textContent = 'Call';
-  setState('not connected', false);
+  remote.srcObject = null; micLevel = remoteLevel = null;
+  if (!keepWanting) { showCallControls(false); setState('ready'); caption.className = ''; caption.textContent = 'Call ended. Tap the green button to call again.'; }
 }
 
-btn.onclick = () => { if (inCall || peer || wantCall) hangup(true); else { wantCall = true; call(); } };
+// ---- buttons
+$('call').onclick = () => { wantCall = true; muted = false; updateMute(); call(); };
+$('end').onclick = () => hangup(true);
+function updateMute() {
+  $('mute').classList.toggle('on', muted);
+  $('slash').classList.toggle('hidden', !muted);
+  $('muteLabel').textContent = muted ? 'Unmute' : 'Mute';
+  document.body.classList.toggle('muted', muted);
+  if (stream) stream.getAudioTracks().forEach(t => { t.enabled = !muted; });
+  if (inCall) setState(claudeState);
+}
+$('mute').onclick = () => { muted = !muted; updateMute(); };
+$('kb').onclick = () => {
+  const bar = $('typeBar'); bar.classList.toggle('hidden');
+  $('kb').classList.toggle('on', !bar.classList.contains('hidden'));
+  if (!bar.classList.contains('hidden')) $('typed').focus();
+};
+$('typeBar').onsubmit = e => {   // typed text goes the same way as speech, skipping speech-to-text
+  e.preventDefault();
+  const text = $('typed').value.trim();
+  if (!text || !conn || !conn.open) return;
+  conn.send({ t: 'type', text });
+  $('typed').value = '';
+};
+$('history').onclick = () => $('sheet').classList.remove('hidden');
+$('closeSheet').onclick = () => $('sheet').classList.add('hidden');
+$('sheet').onclick = e => { if (e.target.id === 'sheet') $('sheet').classList.add('hidden'); };
+
 if (h.get('autocall') === '1') { wantCall = true; call(); }   // only for the PC's own test (test_call.py); a phone never has it in its link
 </script>
 </body>
