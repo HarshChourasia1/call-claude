@@ -262,14 +262,14 @@ async function call() {
   peer.on('call', c => {
     if (stream) c.answer(stream); else c.answer();   // Google mode: Claude's voice comes in, Harsh's words go as text
     c.on('stream', s => {
-      remote.srcObject = s; remote.play().catch(() => {});
+      remote.srcObject = s; remote.play().then(() => dbg('voice playing')).catch(e => dbg('voice blocked ' + e.name));
       try { remoteLevel = actx.createAnalyser(); remoteLevel.fftSize = 1024; actx.createMediaStreamSource(s).connect(remoteLevel); } catch (e) {}
     });
   });
   peer.on('open', () => {
     conn = peer.connect(PEER, { reliable: true });
     conn.on('open', () => {
-      conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1', stt, redial: !!redialing });
+      conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1', stt, redial: !!redialing, clips: false });
       if (!callStart) callStart = Date.now();
       inCall = true; showCallControls(true); setState('idle');
       hint.textContent = stt === 'google' ? 'Tap the screen to cut Claude off.' : ''; animate();
@@ -383,6 +383,7 @@ function isRepeat(text) {   // Android sometimes delivers the same final result 
   lastFinal = text.toLowerCase(); lastFinalAt = Date.now();
   return same;
 }
+function dbg(text) { try { if (conn && conn.open) conn.send({ t: 'dbg', text }); } catch (e) {} }
 function startRec() {
   if (!GSR || stt !== 'google' || clipPlaying) return;
   if (!rec) {
@@ -402,7 +403,7 @@ function startRec() {
       }, 1200);
     };
     rec.onend = () => { recOn = false; if (inCall && !muted && stt === 'google' && !document.hidden && !clipPlaying) setTimeout(startRec, 250); };
-    rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { hint.textContent = 'Google speech not allowed here: switch to the laptop in the sidebar.'; } };
+    rec.onerror = e => { dbg('speech error ' + e.error); if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { hint.textContent = 'Google speech not allowed here: switch to the laptop in the sidebar.'; } };
   }
   if (!recOn) { try { rec.start(); recOn = true; } catch (e) {} }
 }
