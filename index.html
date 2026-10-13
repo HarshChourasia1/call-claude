@@ -177,6 +177,7 @@
 </div></div>
 
 <audio id="remote" autoplay playsinline></audio>
+<audio id="clip" playsinline></audio>
 <script>
 'use strict';
 const h = new URLSearchParams(location.hash.slice(1));
@@ -239,7 +240,7 @@ function animate() {
 // the phone streams its microphone like any call app; the PC decides when Harsh has finished and when he cuts in
 async function call() {
   setState('connecting'); hint.textContent = '';
-  actx = new AudioContext();
+  actx = new AudioContext(); clipSrc = null;
   if (stt !== 'google') {   // laptop mode: stream the microphone; Google mode: one mic user at a time, so none here
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
@@ -270,12 +271,18 @@ async function call() {
       conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1', stt, redial: !!redialing });
       if (!callStart) callStart = Date.now();
       inCall = true; showCallControls(true); setState('idle');
-      hint.textContent = ''; animate();
-      if (!muted) startRec();
+      hint.textContent = stt === 'google' ? 'Tap the screen to cut Claude off.' : ''; animate();
+      setTimeout(() => { if (hint.textContent.startsWith('Tap the screen')) hint.textContent = ''; }, 6000);
+      if (!muted && !clipPlaying) startRec();
     });
     conn.on('data', m => {
-      if (m.t === 'line') { line(m.who, m.text); if (m.who === 'claude') { recentClaude.push(m.text); recentClaude = recentClaude.slice(-6); } }
-      else if (m.t === 'state') { if (claudeState === 'speaking' && m.s !== 'speaking') speakingUntil = Date.now() + 1200; setState(m.s); }
+      if (m.t === 'audio' && m.data) onClip(m);
+      else if (m.t === 'line') { line(m.who, m.text); if (m.who === 'claude') { recentClaude.push(m.text); recentClaude = recentClaude.slice(-6); } }
+      else if (m.t === 'state') {
+        if (stt === 'google' && (m.s === 'speaking' || (m.s === 'idle' && clipPlaying))) return;
+        if (claudeState === 'speaking' && m.s !== 'speaking') speakingUntil = Date.now() + 1200;
+        setState(m.s);
+      }
     });
     conn.on('close', () => dropped());
   });
@@ -308,7 +315,7 @@ document.addEventListener('visibilitychange', async () => {
 function hangup(tell = true, keepWanting = false) {
   if (!keepWanting) { wantCall = false; if (redialing) { clearInterval(redialing); redialing = null; } }
   if (tell && conn && conn.open) { try { conn.send({ t: 'bye' }); } catch (e) {} }
-  inCall = false; stopRec();
+  inCall = false; stopRec(); clips = []; clipPlaying = false; try { clipEl.pause(); } catch (e) {}
   setTimeout(() => { try { peer && peer.destroy(); } catch (e) {} peer = null; conn = null; }, 300);
   try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
   try { actx && actx.close(); } catch (e) {}
@@ -398,6 +405,37 @@ function startRec() {
   if (!recOn) { try { rec.start(); recOn = true; } catch (e) {} }
 }
 function stopRec() { try { rec && rec.abort(); } catch (e) {} recOn = false; }
+
+// ---------------------------------------------------------------- Claude's voice as clips (Google mode)
+// No live audio call in Google mode: Android keeps the mic in its normal, best mode (as when typing with the keyboard's
+// mic). Google stops listening while a clip plays, so it never hears Claude, and starts again right after.
+const clipEl = $('clip');
+let clips = [], clipPlaying = false, clipSrc = null;
+function onClip(m) {
+  clips.push(URL.createObjectURL(new Blob([m.data], { type: 'audio/wav' })));
+  if (!clipPlaying) nextClip();
+}
+function nextClip() {
+  if (!clips.length) {
+    clipPlaying = false; setState('idle'); speakingUntil = Date.now() + 600;
+    if (inCall && !muted) setTimeout(startRec, 300);
+    return;
+  }
+  clipPlaying = true; stopRec(); setState('speaking');
+  if (actx && !clipSrc) { try { clipSrc = actx.createMediaElementSource(clipEl); remoteLevel = actx.createAnalyser(); remoteLevel.fftSize = 1024; clipSrc.connect(remoteLevel); remoteLevel.connect(actx.destination); } catch (e) {} }
+  const url = clips.shift();
+  clipEl.src = url;
+  clipEl.onended = () => { URL.revokeObjectURL(url); nextClip(); };
+  clipEl.play().catch(() => nextClip());
+}
+function cutIn() {   // tap while Claude talks: stop it and listen
+  if (!clipPlaying) return;
+  clips.forEach(u => URL.revokeObjectURL(u)); clips = [];
+  clipEl.pause(); clipPlaying = false;
+  if (conn && conn.open) conn.send({ t: 'interrupt' });
+  setState('idle'); if (!muted) startRec();
+}
+$('v-call').addEventListener('click', e => { if (!e.target.closest('button, input, select, form')) cutIn(); });
 
 // ---------------------------------------------------------------- sidebar: Harsh's mods, read from the PC
 let side = null, sideConn = null, sideReady = null;
