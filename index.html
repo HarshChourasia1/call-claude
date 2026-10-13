@@ -166,9 +166,10 @@
   <div id="hint"></div>
   <div id="compose" class="hidden">
     <div id="chips">
-      <label class="chip">To <select id="desk" aria-label="Which desk">
-        <option value="auto">Auto</option><option value="daily">Daily</option><option value="mis">MIS</option><option value="analysis">Analysis</option>
-        <option value="marketing">Marketing</option><option value="studio">Studio</option><option value="setup">Setup</option></select></label>
+      <label class="chip">To <select id="desk" aria-label="Who it is for">
+        <option value="auto">Auto</option><option value="chief">Chief</option><option value="ops">Ops</option><option value="dev">Dev</option>
+        <option value="growth">Growth</option><option value="data">Data</option><option value="research">Research</option><option value="pm">PM</option>
+        <option value="studio">Studio</option></select></label>
       <label class="chip">Mode <select id="mode" aria-label="How to handle it">
         <option value="normal">Do it</option><option value="plan">Plan first</option><option value="quick">Quick answer</option></select></label>
     </div>
@@ -547,7 +548,7 @@ function sendTyped(input) {   // same route as speech, skipping speech-to-text; 
 $('typeBar').onsubmit = e => { e.preventDefault(); sendTyped($('typed')); };
 $('sheetType').onsubmit = e => { e.preventDefault(); sendTyped($('typed2')); };
 for (const id of ['desk', 'mode']) {
-  try { const v = localStorage.getItem('call_' + id); if (v) $(id).value = v; } catch (e) {}
+  try { const v = localStorage.getItem('call_' + id); if (v && [...$(id).options].some(o => o.value === v)) $(id).value = v; } catch (e) {}
   $(id).onchange = () => { try { localStorage.setItem('call_' + id, $(id).value); } catch (e) {} };
 }
 
