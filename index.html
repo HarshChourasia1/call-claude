@@ -51,7 +51,13 @@
   .ctl { display: flex; flex-direction: column; align-items: center; }
   .hidden { display: none !important; }
 
-  #typeBar { display: flex; gap: 10px; padding: 0 16px 16px; }
+  #typeArea { padding: 0 16px 14px; }
+  #chips { display: flex; gap: 8px; padding-bottom: 8px; }
+  #chips label { display: flex; align-items: center; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+                 padding: 4px 4px 4px 12px; font-size: 13px; color: var(--dim); }
+  #chips select { background: transparent; border: 0; color: var(--text); font: inherit; font-size: 13px; padding: 4px 6px; outline: none; }
+  #chips select option { background: var(--panel); color: var(--text); }
+  #typeBar { display: flex; gap: 10px; }
   #typeBar input { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; color: var(--text);
                    font: inherit; padding: 12px 16px; outline: none; user-select: text; }
   #typeBar input:focus { border-color: var(--accent); }
@@ -83,10 +89,21 @@
   <div id="hint"></div>
 </main>
 
-<form id="typeBar" class="hidden" autocomplete="off">
+<div id="typeArea" class="hidden">
+<div id="chips">
+  <label>To <select id="desk" aria-label="Which desk">
+    <option value="auto">Auto</option><option value="daily">Daily</option><option value="mis">MIS</option><option value="analysis">Analysis</option>
+    <option value="marketing">Marketing</option><option value="studio">Studio</option><option value="setup">Setup</option>
+  </select></label>
+  <label>Mode <select id="mode" aria-label="How to handle it">
+    <option value="normal">Do it</option><option value="plan">Plan first</option><option value="quick">Quick answer</option>
+  </select></label>
+</div>
+<form id="typeBar" autocomplete="off">
   <input id="typed" placeholder="Type here if I mishear you" enterkeyhint="send" aria-label="Type a message to Claude">
   <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
 </form>
+</div>
 
 <div id="controls">
   <div class="ctl" id="preCtl">
@@ -147,7 +164,7 @@ function setState(s) {
 function showCallControls(on) {
   $('preCtl').classList.toggle('hidden', on);
   for (const id of ['kbCtl', 'muteCtl', 'endCtl']) $(id).classList.toggle('hidden', !on);
-  $('typeBar').classList.toggle('hidden', !on);   // always there during a call, for when speech gets it wrong
+  $('typeArea').classList.toggle('hidden', !on);   // always there during a call, for when speech gets it wrong
   document.body.classList.toggle('idle-pre', !on);
 }
 function line(who, text) {
@@ -273,8 +290,12 @@ function sendTyped(input) {   // typed text goes the same way as speech, skippin
   const text = input.value.trim();
   if (!text) return;
   if (!conn || !conn.open) { hint.textContent = 'Not connected: tap Call first.'; return; }
-  conn.send({ t: 'type', text });
+  conn.send({ t: 'type', text, desk: $('desk').value, mode: $('mode').value });   // approvals stay the same in every mode
   input.value = '';
+}
+for (const id of ['desk', 'mode']) {
+  try { const v = localStorage.getItem('call_' + id); if (v) $(id).value = v; } catch (e) {}
+  $(id).onchange = () => { try { localStorage.setItem('call_' + id, $(id).value); } catch (e) {} };
 }
 $('typeBar').onsubmit = e => { e.preventDefault(); sendTyped($('typed')); };
 $('sheetType').onsubmit = e => { e.preventDefault(); sendTyped($('typed2')); };
