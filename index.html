@@ -264,7 +264,7 @@ async function call() {
   peer.on('open', () => {
     conn = peer.connect(PEER, { reliable: true });
     conn.on('open', () => {
-      conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1', stt });
+      conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1', stt, redial: !!redialing });
       if (!callStart) callStart = Date.now();
       inCall = true; showCallControls(true); setState('idle');
       hint.textContent = ''; animate();
@@ -317,7 +317,11 @@ function hangup(tell = true, keepWanting = false) {
   }
 }
 
-$('call').onclick = () => { wantCall = true; muted = false; updateMute(); call(); };
+$('call').onclick = () => {   // a new call starts clean: no transcript from earlier calls
+  wantCall = true; muted = false; updateMute();
+  log.innerHTML = '<div class="empty">Nothing said yet.</div>'; caption.className = ''; caption.textContent = '';
+  call();
+};
 $('end').onclick = () => hangup(true);
 function updateMute() {
   $('mute').classList.toggle('on', muted);
