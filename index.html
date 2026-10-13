@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141413">
+<title>Call Claude</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<!-- This page holds no data and no keys. The key arrives once in the pairing link (#peer=...&key=...) and stays on the phone. -->
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  :root { --bg: #141413; --card: #1f1e1d; --text: #f0eee6; --dim: #9c9a92; --accent: #d97757; --end: #e5484d; --live: #46a758; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { display: flex; flex-direction: column; padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom); }
+  header { padding: 14px 0 6px; display: flex; justify-content: space-between; align-items: baseline; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  #state { font-size: 13px; color: var(--dim); }
+  #state.live { color: var(--live); }
+  #log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 0 16px; }
+  .line { background: var(--card); border-radius: 14px; padding: 9px 12px; max-width: 90%; }
+  .harsh { align-self: flex-end; background: #2b2a27; color: var(--dim); }
+  #empty { color: var(--dim); text-align: center; margin: auto 0; }
+  #bar { padding: 12px 0 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  #btn { width: 120px; height: 120px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font: 600 17px system-ui, sans-serif;
+         box-shadow: 0 6px 24px rgba(0,0,0,.35); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  #btn.on { background: var(--end); }
+  #meter { width: 160px; height: 6px; border-radius: 3px; background: #2b2a27; overflow: hidden; }
+  #meter i { display: block; height: 100%; width: 0; background: var(--live); transition: width .08s; }
+  #hint { color: var(--dim); font-size: 13px; min-height: 18px; text-align: center; }
+  #pair { margin: auto; text-align: center; color: var(--dim); max-width: 320px; }
+</style>
+</head>
+<body>
+<header><h1>Call Claude</h1><span id="state">not connected</span></header>
+<div id="log"><div id="empty">Tap Call and just talk.<br>Pause when you are done; Claude answers out loud.<br>Talk over it any time to interrupt.</div></div>
+<div id="bar">
+  <button id="btn">Call</button>
+  <div id="meter"><i></i></div>
+  <div id="hint"></div>
+</div>
+<audio id="remote" autoplay playsinline></audio>
+<script>
+'use strict';
+const h = new URLSearchParams(location.hash.slice(1));
+if (h.get('peer') && h.get('key')) {
+  try { localStorage.setItem('callPeer', h.get('peer')); localStorage.setItem('callKey', h.get('key')); } catch (e) {}
+  history.replaceState(null, '', location.pathname);
+}
+let PEER = '', KEY = '';
+try { PEER = localStorage.getItem('callPeer') || h.get('peer') || ''; KEY = localStorage.getItem('callKey') || h.get('key') || ''; } catch (e) { PEER = h.get('peer') || ''; KEY = h.get('key') || ''; }
+if (!PEER || !KEY) { document.body.innerHTML = '<div id="pair">Not paired yet. On the PC open the pairing page and scan its code with this phone.</div>'; throw 0; }
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+const $ = id => document.getElementById(id);
+const btn = $('btn'), stateEl = $('state'), hint = $('hint'), log = $('log'), remote = $('remote'), bar = $('meter').firstChild;
+let peer = null, conn = null, stream = null, actx = null, proc = null, wake = null, claudeState = 'idle', inCall = false;
+
+function setState(text, live) { stateEl.textContent = text; stateEl.className = live ? 'live' : ''; }
+function line(who, text) {
+  $('empty')?.remove();
+  const d = document.createElement('div'); d.className = 'line ' + who; d.textContent = text;
+  log.appendChild(d); log.scrollTop = log.scrollHeight;
+}
+
+// ---- voice activity: speech starts when the level is well above the room's noise, ends after 0.8 s of quiet
+const PRE_MS = 300, END_MS = 800, MIN_MS = 350, MAX_MS = 30000;
+let floor = 0.01, talking = false, speechMs = 0, quietMs = 0, frames = [], pre = [];
+
+function onAudio(e) {
+  const x = e.inputBuffer.getChannelData(0), ms = x.length / actx.sampleRate * 1000;
+  let sum = 0; for (let i = 0; i < x.length; i++) sum += x[i] * x[i];
+  const rms = Math.sqrt(sum / x.length);
+  bar.style.width = Math.min(100, rms / 0.15 * 100) + '%';
+  const copy = new Float32Array(x);
+  // while Claude speaks, ask for a clearly louder voice so its echo is not taken for Harsh
+  const factor = claudeState === 'speaking' ? 4.5 : 3;
+  const loud = rms > Math.max(0.012, floor * factor);
+  if (!talking) {
+    floor = floor * 0.97 + Math.min(rms, 0.05) * 0.03;
+    pre.push(copy); while (pre.length * ms > PRE_MS) pre.shift();
+    speechMs = loud ? speechMs + ms : 0;
+    if (speechMs >= 120) {
+      talking = true; quietMs = 0; frames = pre.slice(); pre = [];
+      if (claudeState === 'speaking') { conn.send({ t: 'interrupt' }); claudeState = 'idle'; }
+      hint.textContent = 'Listening...';
+    }
+  } else {
+    frames.push(copy);
+    quietMs = loud ? 0 : quietMs + ms;
+    const len = frames.length * ms;
+    if (quietMs >= END_MS || len >= MAX_MS) {
+      talking = false; speechMs = 0;
+      if (len - quietMs >= MIN_MS) sendUtterance(frames, actx.sampleRate);
+      frames = [];
+      hint.textContent = '';
+    }
+  }
+}
+
+function wav16k(chunks, rate) {
+  const total = chunks.reduce((a, c) => a + c.length, 0), step = rate / 16000, n = Math.floor(total / step);
+  const all = new Float32Array(total); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+  const b = new ArrayBuffer(44 + n * 2), v = new DataView(b);
+  const w = (p, s) => [...s].forEach((ch, i) => v.setUint8(p + i, ch.charCodeAt(0)));
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 16000, true); v.setUint32(28, 32000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) {   // average each step of samples: a simple low-pass while going down to 16 kHz
+    const a = Math.floor(i * step), z = Math.min(total, Math.floor((i + 1) * step)); let s = 0;
+    for (let j = a; j < z; j++) s += all[j];
+    v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, s / Math.max(1, z - a))) * 32767, true);
+  }
+  return b;
+}
+
+function sendUtterance(chunks, rate) {
+  if (!conn || !conn.open) return;
+  conn.send({ t: 'utter', wav: wav16k(chunks, rate) });
+  setState('thinking', true);
+}
+
+// ---- the call
+async function call() {
+  btn.disabled = true; hint.textContent = 'Connecting...';
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  } catch (e) { hint.textContent = 'Microphone blocked: allow it for this page.'; btn.disabled = false; return; }
+  actx = new AudioContext();
+  const src = actx.createMediaStreamSource(stream);
+  proc = actx.createScriptProcessor(2048, 1, 1);
+  proc.onaudioprocess = e => { if (inCall) onAudio(e); };
+  src.connect(proc); proc.connect(actx.destination);   // output stays silent: nothing is written to it
+  try { wake = await navigator.wakeLock?.request('screen'); } catch (e) {}
+
+  peer = new Peer({ debug: 1 });
+  peer.on('error', e => { hint.textContent = 'Could not reach the PC (' + e.type + '). Is it on?'; hangup(false); });
+  peer.on('call', c => {
+    c.answer();
+    c.on('stream', s => { remote.srcObject = s; remote.play().catch(() => {}); });
+  });
+  peer.on('open', () => {
+    conn = peer.connect(PEER, { reliable: true });
+    conn.on('open', () => {
+      conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1' });
+      inCall = true; btn.disabled = false; btn.className = 'on'; btn.textContent = 'End';
+      setState('on call', true); hint.textContent = '';
+    });
+    conn.on('data', m => {
+      if (m.t === 'line') line(m.who, m.text);
+      else if (m.t === 'state') { claudeState = m.s; setState(m.s === 'idle' ? 'on call' : m.s, true); }
+    });
+    conn.on('close', () => hangup(false));
+  });
+  setTimeout(() => { if (!inCall && peer) { hint.textContent = 'The PC did not answer. Is it on?'; hangup(false); } }, 20000);
+}
+
+function hangup(tell = true) {
+  if (tell && conn && conn.open) { try { conn.send({ t: 'bye' }); } catch (e) {} }
+  inCall = false;
+  setTimeout(() => { try { peer && peer.destroy(); } catch (e) {} peer = null; conn = null; }, 300);
+  try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+  try { actx && actx.close(); } catch (e) {}
+  try { wake && wake.release(); } catch (e) {}
+  remote.srcObject = null; bar.style.width = '0';
+  btn.disabled = false; btn.className = ''; btn.textContent = 'Call';
+  setState('not connected', false);
+}
+
+btn.onclick = () => (inCall || peer) ? hangup(true) : call();
+if (h.get('autocall') === '1') call();   // only for the PC's own test (test_call.py); a phone never has it in its link
+</script>
+</body>
+</html>
