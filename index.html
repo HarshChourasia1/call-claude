@@ -280,7 +280,7 @@ async function call() {
       if (m.t === 'audio' && m.data) onClip(m);
       else if (m.t === 'line') { line(m.who, m.text); if (m.who === 'claude') { recentClaude.push(m.text); recentClaude = recentClaude.slice(-6); } }
       else if (m.t === 'state') {
-        if (stt === 'google' && (m.s === 'speaking' || (m.s === 'idle' && clipPlaying))) return;
+        if (clipPlaying && (m.s === 'speaking' || m.s === 'idle')) return;   // clip mode only (off by default)
         if (claudeState === 'speaking' && m.s !== 'speaking') speakingUntil = Date.now() + 1200;
         setState(m.s);
       }
@@ -394,7 +394,7 @@ function startRec() {
       const r = e.results[e.results.length - 1], text = r[0].transcript.trim();
       if (!text || isEcho(text)) return;
       caption.textContent = text; caption.className = 'me';
-      if (claudeState === 'speaking' && words(text).length >= 2) { if (conn && conn.open) conn.send({ t: 'interrupt' }); claudeState = 'idle'; }
+      if (claudeState === 'speaking' && words(text).length >= 2) { if (conn && conn.open) conn.send({ t: 'interrupt' }); claudeState = 'idle'; dbg('cut in: ' + text.slice(0, 40)); }
       settling = text;
       clearTimeout(settleTimer);
       settleTimer = setTimeout(() => {
