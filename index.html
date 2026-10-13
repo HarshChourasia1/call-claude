@@ -26,6 +26,7 @@
   .icon-btn:active { background: var(--surface2); }
   .icon-btn svg, .nav svg, .round svg { width: 24px; height: 24px; }
   .bar .title { font-size: 20px; flex: 1; padding-left: 4px; }
+  #updateChip { margin-right: 4px; background: var(--primary); color: var(--onprimary); border: 0; border-radius: 16px; padding: 6px 12px; font-size: 13px; }
   #onCallChip { margin-right: 8px; background: var(--ok); color: var(--okfg); border: 0; border-radius: 16px; padding: 6px 12px; font-size: 13px; }
 
   .view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -112,6 +113,8 @@
   <button class="icon-btn" id="menu" aria-label="Open the sidebar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
   <span class="title" id="barTitle">Claude</span>
   <button id="onCallChip" class="hidden">On call 0:00</button>
+  <button id="updateChip" class="hidden">Update ready</button>
+  <button class="icon-btn" id="reload" aria-label="Reload the app"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/></svg></button>
 </div>
 
 <section class="view" id="v-call">
@@ -504,6 +507,27 @@ function onPanelData(m) {
     }));
   }
 }
+
+// ---------------------------------------------------------------- reload and updates
+// The reload button loads the latest version. The app also checks for a newer version every two minutes and, when one
+// is published, shows "Update ready"; it never reloads by itself, and never during a call.
+function reloadApp() {
+  if (inCall && !confirm('Reloading ends the call. Reload now?')) return;
+  if (inCall) hangup(true);
+  location.replace(location.pathname + '?u=' + Date.now());
+}
+$('reload').onclick = reloadApp;
+$('updateChip').onclick = reloadApp;
+let firstCopy = null;
+async function checkUpdate() {
+  try {
+    const t = await (await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' })).text();
+    if (firstCopy === null) { firstCopy = t; return; }
+    $('updateChip').classList.toggle('hidden', t === firstCopy);
+  } catch (e) {}
+}
+checkUpdate(); setInterval(checkUpdate, 120000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 
 if (h.get('autocall') === '1') { wantCall = true; call(); }   // only for the PC's own test (test_call.py); a phone never has it in its link
 </script>
