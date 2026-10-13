@@ -89,11 +89,11 @@
                   display: grid; place-items: center; flex-shrink: 0; }
 
   /* one row of round controls at the bottom, End on the right, as in Claude's voice mode */
-  #dock { display: flex; justify-content: center; align-items: center; gap: 14px; padding: 14px 16px 26px; }
-  #keys { display: flex; gap: 14px; }
+  #dock { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 10px 8px 22px; }
+  #keys { display: flex; gap: 12px; }
   .key { display: contents; }
   .key span { display: none; }
-  .round { width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--surface); color: var(--text);
+  .round { width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--surface); color: var(--text);
            display: grid; place-items: center; cursor: pointer; transition: background .15s, transform .1s; }
   .round svg { width: 24px; height: 24px; }
   .round.on { background: var(--text); color: var(--bg); }
@@ -126,14 +126,84 @@
   .empty { color: var(--dim); text-align: center; padding: 40px 0; }
   .refresh { color: var(--dim); font-size: 12px; text-align: center; margin-top: 12px; }
 
-  #sheet { position: fixed; inset: 0; background: rgba(20,20,19,.4); display: flex; align-items: flex-end; z-index: 8; }
-  #sheet .panel { width: 100%; max-height: 78dvh; background: var(--bg); border-radius: 24px 24px 0 0; display: flex; flex-direction: column;
+  .sheet { position: fixed; inset: 0; background: rgba(20,20,19,.4); display: flex; align-items: flex-end; z-index: 8; }
+  .sheet .panel { width: 100%; max-height: 78dvh; background: var(--bg); border-radius: 24px 24px 0 0; display: flex; flex-direction: column;
                   padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); }
-  #sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--line); margin: 6px auto 14px; }
+  .sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--line); margin: 6px auto 14px; }
   #log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 0 4px; }
   .line { font-family: "Source Serif 4", "Noto Serif", Georgia, serif; font-size: 17px; line-height: 1.45; max-width: 92%; }
   .line.harsh { align-self: flex-end; background: var(--surface); border-radius: 18px; padding: 8px 14px; max-width: 82%;
                 font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; }
+  /* 14 Oct app update: PC dot, call switches, Hold, fix what it heard, end-of-call card, swipe lists, sheets, Undo */
+  #pcDot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); margin: 0 8px; flex-shrink: 0; transition: background .3s; }
+  #pcDot.on { background: var(--good); }
+  #heardRow { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 16px; color: var(--dim); font-size: 13px; }
+  #heardRow .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .mini { border: 0; background: none; color: var(--dim); width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+  .mini svg { width: 17px; height: 17px; }
+  #fixBox { padding: 4px 16px 0; }
+  #afterRow, #opts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 6px 12px 0; }
+  .pill { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--dim); font-size: 13px;
+          display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+  .pill.on { background: var(--tint); color: var(--primary); border-color: transparent; }
+  .pill.go { background: var(--primary); color: var(--onprimary); border-color: transparent; }
+  .pill select { background: transparent; border: 0; color: var(--text); font: inherit; font-size: 13px; padding: 2px; outline: none; }
+  .pill select option { background: var(--surface); }
+  body.handsfree #compose, body.handsfree #kbKey, body.handsfree #sheetType, body.handsfree #fixBtn, body.handsfree #fixBox { display: none !important; }
+  #endCard { flex: 1; min-height: 0; overflow-y: auto; margin: 8px 16px; }
+  #endCard .eh { font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin: 12px 0 4px; }
+  #endCard .el { font-size: 14px; padding: 3px 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px; }
+  .tag { display: inline-block; font-size: 11px; line-height: 16px; padding: 0 7px; border-radius: 999px; margin-right: 6px; background: var(--surface2); color: var(--dim); }
+  .tag.high { background: var(--tint); color: var(--primary); } .tag.mid { color: var(--warn); } .tag.low { color: var(--good); }
+  .tag.st-waiting-approval, .tag.st-ready-to-send { color: var(--warn); } .tag.st-blocked { color: var(--endbg); } .tag.st-working { color: var(--primary); }
+  .sw { position: relative; margin-bottom: 8px; border-radius: 14px; background: var(--surface2); overflow: hidden; }
+  .sw > .card { margin: 0; position: relative; z-index: 1; touch-action: pan-y; transition: transform .18s ease-out; user-select: none; -webkit-user-select: none; }
+  .sw::before, .sw::after { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding: 0 16px; font-size: 13px;
+                            color: var(--primary); opacity: 0; transition: opacity .15s; }
+  .sw::before { content: 'Note'; left: 0; } .sw::after { content: 'Actions'; right: 0; }
+  .sw.goR::before, .sw.goL::after { opacity: 1; }
+  .card .it { word-break: break-word; }
+  .card.big { padding: 18px; } .card.big .it { font-family: "Source Serif 4", "Noto Serif", Georgia, serif; font-size: 20px; line-height: 1.35; }
+  .sheet-title { font-family: "Source Serif 4", "Noto Serif", Georgia, serif; font-size: 18px; margin: 0 4px 2px; display: -webkit-box;
+                 -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  #actBody { overflow-y: auto; padding: 0 2px 6px; }
+  #actBody h4, #panelBody h4 { font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin: 14px 4px 0; }
+  .btns.wrap { flex-wrap: wrap; } .btns.wrap > * { flex: 1 1 28%; min-width: 84px; }
+  .btns button.on { background: var(--tint); color: var(--primary); border-color: transparent; }
+  .btns.big button { height: 56px; font-size: 17px; }
+  .datebtn { position: relative; height: 40px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); display: grid; place-items: center; font-size: 15px; }
+  .datebtn input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; }
+  textarea.note { display: block; width: 100%; margin-top: 12px; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 14px;
+                  padding: 10px 12px; font: inherit; resize: none; outline: none; }
+  .switchrow { margin: 12px 4px 4px; }
+  button.wide { display: block; width: 100%; height: 44px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); margin-top: 8px; font-size: 15px; }
+  button.wide.yes { background: var(--primary); color: var(--onprimary); border: 0; }
+  textarea.draft { display: block; width: calc(100% + 16px); margin: 6px -8px 0; background: transparent; color: var(--text); border: 1px solid transparent; border-radius: 10px;
+                   padding: 6px 8px; font: inherit; font-size: 15px; line-height: 1.45; resize: none; overflow: hidden; outline: none; }
+  textarea.draft:focus { border-color: var(--line); background: var(--bg); }
+  .drafttext { white-space: pre-wrap; margin-top: 6px; word-break: break-word; }
+  .triagebar { margin: 8px 0 12px; }
+  .det { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 8px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; word-break: break-word; }
+  .linkish { border: 0; background: none; display: block; width: 100%; }
+  #toast { position: fixed; left: 68px; right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); background: var(--text); color: var(--bg); border-radius: 14px;
+           padding: 8px 6px 10px 14px; display: flex; align-items: center; gap: 8px; z-index: 9; font-size: 14px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  #toastText { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #toastUndo { border: 0; background: none; color: #b8593b; font-weight: 600; height: 32px; padding: 0 10px; }
+  #toastBar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--primary); width: 0; }
+  /* usage strip (like deck's band): green normal, amber over 70%, red over 90% */
+  .ustrip { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; padding: 2px 12px 0; font-size: 12px; color: var(--dim);
+            font-variant-numeric: tabular-nums; }
+  .ustrip b { font-weight: 600; } .ustrip .ok { color: var(--good); } .ustrip .amber { color: var(--warn); } .ustrip .red { color: var(--endbg); }
+  #v-panel .ustrip { justify-content: flex-start; padding: 8px 4px 0; }
+  /* Chat tab: the WhatsApp chat "Claude" with Chief */
+  #v-chat .thread { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .bub { max-width: 84%; padding: 7px 12px 5px; border-radius: 16px; font-size: 15px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+  .bub.me { align-self: flex-end; background: var(--tint); border-bottom-right-radius: 6px; }
+  .bub.claude { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 6px; }
+  .bub .tm { display: block; text-align: right; font-size: 11px; color: var(--dim); margin-top: 2px; }
+  #chatForm { margin: 6px 12px calc(10px + env(safe-area-inset-bottom)); }
+  body.handsfree #chatForm { display: none !important; }
   #pair { margin: auto; text-align: center; color: var(--dim); max-width: 320px; padding: 24px; }
 </style>
 </head>
@@ -142,6 +212,8 @@
   <button class="nav active" data-view="call" aria-label="Call"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button>
   <button class="nav" data-view="brain" aria-label="Brain"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V8h14zM7 10h5v5H7z"/></svg><span class="badge" id="b-brain"></span></button>
   <button class="nav" data-view="approvals" aria-label="Approvals"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9z"/></svg><span class="badge" id="b-approvals"></span></button>
+  <button class="nav" data-view="jobs" aria-label="Jobs"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4h4a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3V6a2 2 0 0 1 2-2zm0 3h4V6h-4zm-5 4v7h14v-7z"/></svg><span class="badge" id="b-jobs"></span></button>
+  <button class="nav" data-view="chat" aria-label="Chat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2zm2 4v2h12V8zm0 4v2h8v-2z" transform="translate(-1 0)"/></svg></button>
   <button class="nav" data-view="desks" aria-label="Desks"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg></button>
   <button class="nav" data-view="mis" aria-label="MIS"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></button>
   <button class="nav" data-view="connectors" aria-label="Connectors"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg></button>
@@ -152,10 +224,12 @@
   <span class="title" id="barTitle">Claude</span>
   <button id="onCallChip" class="hidden">On call 0:00</button>
   <button id="updateChip" class="hidden">Update ready</button>
+  <span id="pcDot" role="img" aria-label="PC not reachable" title="PC not reachable"></span>
   <button class="icon-btn" id="reload" aria-label="Reload the app"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/></svg></button>
 </div>
 
 <section class="view" id="v-call">
+  <div class="ustrip" id="ustrip" aria-label="Plan usage"></div>
   <div id="callTop">
     <div id="avatar" aria-hidden="true"></div>
     <div id="name">Claude</div>
@@ -163,16 +237,24 @@
     <div id="wave"><i></i><i></i><i></i><i></i><i></i></div>
   </div>
   <div id="caption">Tap Talk and just speak.</div>
+  <div id="endCard" class="card hidden"></div>
+  <div id="heardRow" class="hidden"><span class="t" id="heardText"></span>
+    <button class="mini" id="fixBtn" aria-label="Fix what it heard"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z"/></svg></button></div>
+  <div id="fixBox" class="hidden"><form class="field" id="fixForm" autocomplete="off">
+    <input id="fixText" enterkeyhint="send" aria-label="What you actually said">
+    <button type="submit" aria-label="Send the corrected words"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 20V4l19 8z"/></svg></button></form></div>
   <div id="hint"></div>
+  <div id="afterRow" class="hidden"><button class="pill" id="repeatBtn">Repeat</button><button class="pill" id="shorterBtn">Shorter</button></div>
+  <div id="opts">
+    <label class="pill">To <select id="toRole" aria-label="Who it is for">
+      <option value="chief">Chief</option><option value="ops">Ops</option><option value="dev">Dev</option><option value="growth">Growth</option>
+      <option value="data">Data</option><option value="research">Research</option><option value="pm">PM</option><option value="studio">Studio</option></select></label>
+    <button class="pill" data-opt="plan">Plan first</button><button class="pill" data-opt="quick">Quick answer</button>
+    <button class="pill" data-opt="short">Short replies</button><button class="pill" data-opt="handsfree">Hands-free</button>
+    <label class="pill">Model <select id="modelChip" aria-label="Call brain model, from the next call">
+      <option value="sonnet">Sonnet</option><option value="haiku">Haiku</option><option value="opus">Opus</option></select></label>
+  </div>
   <div id="compose" class="hidden">
-    <div id="chips">
-      <label class="chip">To <select id="desk" aria-label="Who it is for">
-        <option value="auto">Auto</option><option value="chief">Chief</option><option value="ops">Ops</option><option value="dev">Dev</option>
-        <option value="growth">Growth</option><option value="data">Data</option><option value="research">Research</option><option value="pm">PM</option>
-        <option value="studio">Studio</option></select></label>
-      <label class="chip">Mode <select id="mode" aria-label="How to handle it">
-        <option value="normal">Do it</option><option value="plan">Plan first</option><option value="quick">Quick answer</option></select></label>
-    </div>
     <form class="field" id="typeBar" autocomplete="off">
       <input id="typed" placeholder="Type, or use your keyboard's mic" enterkeyhint="send" aria-label="Type a message to Claude">
       <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 20V4l19 8z"/></svg></button>
@@ -181,7 +263,8 @@
   <div id="dock">
   <div id="keys" class="hidden">
     <div class="key"><button class="round" id="mute" aria-label="Mute"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></svg></button><span id="muteLabel">Mute</span></div>
-    <div class="key"><button class="round" id="kb" aria-label="Keyboard"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm-9 3h2v2h-2zm0 3h2v2h-2zM8 8h2v2H8zm0 3h2v2H8zm-1 2H5v-2h2zm0-3H5V8h2zm9 7H8v-2h8zm0-4h-2v-2h2zm0-3h-2V8h2zm3 3h-2v-2h2zm0-3h-2V8h2z"/></svg></button><span>Keyboard</span></div>
+    <div class="key" id="kbKey"><button class="round" id="kb" aria-label="Keyboard"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm-9 3h2v2h-2zm0 3h2v2h-2zM8 8h2v2H8zm0 3h2v2H8zm-1 2H5v-2h2zm0-3H5V8h2zm9 7H8v-2h8zm0-4h-2v-2h2zm0-3h-2V8h2zm3 3h-2v-2h2zm0-3h-2V8h2z"/></svg></button><span>Keyboard</span></div>
+    <div class="key"><button class="round" id="hold" aria-label="Hold: keep listening until Done"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z"/></svg></button><span>Hold</span></div>
     <div class="key"><button class="round" id="history" aria-label="Transcript"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 9h12v2H6zm8 5H6v-2h8zm4-6H6V6h12z"/></svg></button><span>Transcript</span></div>
   </div>
   <div id="endRow">
@@ -189,6 +272,14 @@
     <button class="round hidden" id="end" aria-label="End call"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1a1 1 0 0 1-.56.9 11.5 11.5 0 0 0-2.66 1.85 1 1 0 0 1-1.41-.02L.29 13.08a1 1 0 0 1 0-1.41C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67a1 1 0 0 1 0 1.41l-2.48 2.48a1 1 0 0 1-1.41.02 11.3 11.3 0 0 0-2.66-1.85 1 1 0 0 1-.56-.9v-3.1A15 15 0 0 0 12 9z"/></svg></button>
   </div>
   </div>
+</section>
+
+<section class="view hidden" id="v-chat">
+  <div class="thread" id="thread"><div class="empty">Loading...</div></div>
+  <form class="field" id="chatForm" autocomplete="off">
+    <input id="chatText" placeholder="Message Chief" enterkeyhint="send" aria-label="Message to Chief">
+    <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 20V4l19 8z"/></svg></button>
+  </form>
 </section>
 
 <section class="view hidden" id="v-panel"><div class="scroll" id="panelBody"></div></section>
@@ -203,10 +294,15 @@
     </div>
     <div class="refresh">Changes take effect on the next call.</div>
   </div>
+  <div class="section"><h3>Call brain</h3>
+    <div class="card"><label for="modelSet">Model</label>
+      <select id="modelSet" class="set-select"><option value="sonnet">Sonnet (default)</option><option value="haiku">Haiku (quicker)</option><option value="opus">Opus (deepest)</option></select>
+      <div class="sub">Used from the next call. The end-of-call card says which model was on, so you can compare.</div></div>
+  </div>
 </div></section>
 </div>
 
-<div id="sheet" class="hidden"><div class="panel">
+<div id="sheet" class="sheet hidden"><div class="panel">
   <div class="grab"></div>
   <div id="log"><div class="empty">Nothing said yet.</div></div>
   <form class="field" id="sheetType" autocomplete="off" style="padding-top:12px">
@@ -214,6 +310,9 @@
     <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 20V4l19 8z"/></svg></button>
   </form>
 </div></div>
+
+<div id="act" class="sheet hidden"><div class="panel"><div class="grab"></div><div id="actBody"></div></div></div>
+<div id="toast" class="hidden" role="status" aria-live="polite"><span id="toastText"></span><button id="toastUndo">Undo</button><span id="toastBar"></span></div>
 
 <audio id="remote" autoplay playsinline></audio>
 <audio id="clip" playsinline></audio>
@@ -236,10 +335,13 @@ let micLevel = null, remoteLevel = null, callStart = 0, currentView = 'call', sp
 
 // ---------------------------------------------------------------- call screen
 function fmt(s) { return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); }
+var holding = false, sticky = null;   // Hold is on; a status that stays a while ("Handed to Chief", "Waiting for your yes")
 function setState(s) {
   if (claudeState === 'speaking' && s !== 'speaking') speakEnd = Date.now();   // the echo gate keeps a short tail after this
   claudeState = s;
-  const word = { idle: 'Listening', listening: 'Listening', thinking: 'Thinking', speaking: 'Speaking', connecting: 'Calling...', ready: 'Ready to call', dropped: 'Reconnecting...' }[s] || s;
+  let word = { idle: 'Listening', listening: 'Listening', heard: 'Heard you', thinking: 'Thinking', speaking: 'Speaking', connecting: 'Calling...', ready: 'Ready to call', dropped: 'Reconnecting...' }[s] || s;
+  if (inCall && (s === 'idle' || s === 'listening') && sticky && Date.now() < sticky.until) word = sticky.word;
+  if (inCall && holding && s !== 'speaking') word = 'Holding · tap Done';
   statusEl.textContent = inCall ? `${fmt((Date.now() - callStart) / 1000)}  ·  ${muted ? 'Muted' : word}` : word;
   document.body.classList.toggle('thinking', s === 'thinking');
 }
@@ -247,7 +349,8 @@ setInterval(() => {
   if (inCall) { setState(claudeState); $('onCallChip').textContent = 'On call ' + fmt((Date.now() - callStart) / 1000); }
 }, 1000);
 function showCallControls(on) {
-  for (const id of ['compose', 'keys', 'end']) $(id).classList.toggle('hidden', !on);
+  for (const id of ['compose', 'keys', 'end', 'afterRow']) $(id).classList.toggle('hidden', !on);
+  if (!on) { $('heardRow').classList.add('hidden'); $('fixBox').classList.add('hidden'); }
   document.body.classList.toggle('oncall', on);
   $('call').classList.toggle('hidden', on);
   $('onCallChip').classList.toggle('hidden', !on || currentView === 'call');
@@ -442,6 +545,7 @@ async function call() {
     conn = peer.connect(PEER, { reliable: true });
     conn.on('open', () => {
       conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1', stt, redial: !!redialing, clips: false, vad: useVad });
+      sendFlags(); holding = false; paintHold();
       if (useVad && !muted) vad.start();
       sendMicNote();
       lastData = Date.now(); watchIce(conn.peerConnection);
@@ -453,9 +557,16 @@ async function call() {
     });
     conn.on('data', m => {
       lastData = Date.now();
-      if (m.t === 'pong') return;
+      if (m.t === 'pong') { lastPong = Date.now(); return; }
       if (m.t === 'audio' && m.data) onClip(m);
-      else if (m.t === 'line') { line(m.who, m.text); if (m.who === 'claude') { recentClaude.push(m.text); recentClaude = recentClaude.slice(-6); } }
+      else if (m.t === 'status') {   // the server: handed to Chief, or a new numbered ask waits for his yes
+        sticky = m.s === 'asked' ? { word: 'Waiting for your yes', until: Date.now() + 60000 } : { word: 'Handed to Chief', until: Date.now() + 20000 };
+        setState(claudeState);
+      }
+      else if (m.t === 'line') {
+        line(m.who, m.text);
+        if (m.who === 'claude') { recentClaude.push(m.text); recentClaude = recentClaude.slice(-6); } else showHeard(m.text);
+      }
       else if (m.t === 'state') {
         if (clipPlaying && (m.s === 'speaking' || m.s === 'idle')) return;   // clip mode only (off by default)
         if (claudeState === 'speaking' && m.s !== 'speaking') speakingUntil = Date.now() + 1200;
@@ -508,7 +619,7 @@ document.addEventListener('visibilitychange', async () => {
 function hangup(tell = true, keepWanting = false) {
   if (!keepWanting) { wantCall = false; if (redialing) { clearInterval(redialing); redialing = null; } }
   if (tell && conn && conn.open) { try { conn.send({ t: 'bye' }); } catch (e) {} }
-  inCall = false; stopRec(); clips = []; clipPlaying = false; try { clipEl.pause(); } catch (e) {}
+  inCall = false; holding = false; sticky = null; stopRec(); clips = []; clipPlaying = false; try { clipEl.pause(); } catch (e) {}
   try { vad && vad.destroy(); } catch (e) {} vad = null; useVad = false; vadLevel = 0; lastData = 0;
   setTimeout(() => { try { peer && peer.destroy(); } catch (e) {} peer = null; conn = null; }, 300);
   try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
@@ -522,11 +633,11 @@ function hangup(tell = true, keepWanting = false) {
 }
 
 $('call').onclick = () => {   // a new call starts clean: no transcript from earlier calls
-  wantCall = true; muted = false; updateMute();
+  wantCall = true; muted = false; updateMute(); hideEndCard(); lastHeard = '';
   log.innerHTML = '<div class="empty">Nothing said yet.</div>'; caption.className = ''; caption.textContent = '';
   call();
 };
-$('end').onclick = () => hangup(true);
+$('end').onclick = () => { hangup(true); paintHold(); showEndCard(); };
 function updateMute() {
   $('mute').classList.toggle('on', muted);
   $('muteLabel').textContent = muted ? 'Unmute' : 'Mute';
@@ -542,15 +653,11 @@ function sendTyped(input) {   // same route as speech, skipping speech-to-text; 
   const text = input.value.trim();
   if (!text) return;
   if (!conn || !conn.open) { hint.textContent = 'Not on a call: tap Talk first.'; return; }
-  conn.send({ t: 'type', text, desk: $('desk').value, mode: $('mode').value });
+  conn.send({ t: 'type', text, desk: toRole, mode: 'normal', flags: opts });
   input.value = '';
 }
 $('typeBar').onsubmit = e => { e.preventDefault(); sendTyped($('typed')); };
 $('sheetType').onsubmit = e => { e.preventDefault(); sendTyped($('typed2')); };
-for (const id of ['desk', 'mode']) {
-  try { const v = localStorage.getItem('call_' + id); if (v && [...$(id).options].some(o => o.value === v)) $(id).value = v; } catch (e) {}
-  $(id).onchange = () => { try { localStorage.setItem('call_' + id, $(id).value); } catch (e) {} };
-}
 
 // ---------------------------------------------------------------- Google speech recognition on the phone
 // Chrome on Android has Google's own recognizer (the one behind Gboard's mic): free and good with Indian English. When it
@@ -655,11 +762,12 @@ $('v-call').addEventListener('click', e => {
 
 // ---------------------------------------------------------------- icon rail: Harsh's mods, read from the PC
 let side = null, sideConn = null, sideReady = null;
-const titles = { call: 'Claude', brain: 'Brain', approvals: 'Approvals', desks: 'Desks', mis: 'MIS', connectors: 'Connectors', settings: 'Settings' };
+const titles = { call: 'Claude', brain: 'Brain', approvals: 'Approvals', jobs: 'Jobs', chat: 'Chat', desks: 'Desks', mis: 'MIS', connectors: 'Connectors', settings: 'Settings' };
 $('onCallChip').onclick = () => show('call');
 document.querySelectorAll('.nav').forEach(b => b.onclick = () => show(b.dataset.view));
 
 function show(view) {
+  if (view !== currentView) triage = null;
   currentView = view;
   document.querySelectorAll('.nav').forEach(b => {
     const on = b.dataset.view === view;
@@ -669,15 +777,18 @@ function show(view) {
   $('barTitle').textContent = titles[view];
   $('v-call').classList.toggle('hidden', view !== 'call');
   $('v-settings').classList.toggle('hidden', view !== 'settings');
-  $('v-panel').classList.toggle('hidden', view === 'call' || view === 'settings');
+  $('v-chat').classList.toggle('hidden', view !== 'chat');
+  $('v-panel').classList.toggle('hidden', view === 'call' || view === 'settings' || view === 'chat');
   $('onCallChip').classList.toggle('hidden', !inCall || view === 'call');
-  if (view !== 'call' && view !== 'settings') loadPanel(view);
+  if (view === 'chat') loadChat(true);
+  else if (view !== 'call' && view !== 'settings') loadPanel(view);
 }
 
 // its own quiet link to the PC, so the sidebar works without a call
 function sideLink() {
   if (sideConn && sideConn.open) return Promise.resolve(sideConn);
   if (sideReady) return sideReady;
+  try { side && side.destroy(); } catch (e) {} side = null;   // an old link that closed: one link at a time
   sideReady = new Promise((resolve, reject) => {
     side = new Peer({ debug: 1 });
     const fail = () => { sideReady = null; try { side.destroy(); } catch (e) {} side = sideConn = null; reject(new Error('PC not reachable')); };
@@ -710,48 +821,39 @@ async function loadPanel(view) {
 }
 
 function onPanelData(m) {
+  if (m.t === 'pong') { lastPong = Date.now(); paintDot(); return; }
+  if (m.t === 'acted') { const w = waiters[m.rid]; if (w) { delete waiters[m.rid]; w(m); } return; }
   if (m.t === 'answered') { if (currentView === 'approvals') loadPanel('approvals'); return; }
-  if (m.t !== 'panel' || m.what !== currentView) return;
+  if (m.t !== 'panel') return;
+  lastPong = Date.now(); paintDot();
+  if (m.what === 'chat') { if (currentView === 'chat' && m.data) renderChat(m.data); return; }
+  if (m.what !== currentView) return;
   const body = $('panelBody'), d = m.data;
   body.innerHTML = '';
   if (d == null) { body.appendChild(el('div', 'empty', 'Nothing to show.')); return; }
-  if (m.what === 'brain') {
-    const n = (d.groups || []).find(g => g.label === 'Overdue');
-    $('b-brain').textContent = n && n.items.length ? String(n.items.length) : '';   // overdue count on the rail icon
-    if (d.meetings && d.meetings.length) body.appendChild(section('Meetings', d.meetings, textCard));
-    (d.groups || []).forEach(g => body.appendChild(section(`${g.label} (${g.items.length})`, g.items, textCard)));
-    if (d.todo && d.todo.length) body.appendChild(section(`To do today (${d.todo.length})`, d.todo, textCard));
-    if (d.done && d.done.length) body.appendChild(section('Done today', d.done, textCard));
-    body.appendChild(el('div', 'refresh', 'Brain as of ' + (d.updated || 'now')));
-  } else if (m.what === 'approvals') {
-    $('b-approvals').textContent = d.length ? String(d.length) : '';
-    if (!d.length) { body.appendChild(el('div', 'empty', 'No desk is waiting for your yes.')); return; }
-    body.appendChild(section('Waiting for your answer', d, a => {
-      const c = el('div', 'card');
-      c.appendChild(el('div', '', a.text));
-      c.appendChild(el('div', 'sub', `${a.desk} desk · ${a.at}`));
-      const btns = el('div', 'btns');
-      for (const [label, word, cls] of [['No', 'no', ''], ['Yes', 'yes', 'yes']]) {
-        const b = el('button', cls, label);
-        b.onclick = () => { b.disabled = true; ask({ t: 'answer', desk: a.desk, text: word }); };
-        btns.appendChild(b);
-      }
-      c.appendChild(btns);
-      return c;
-    }));
-    body.appendChild(el('div', 'refresh', 'Changes to live systems still need Approve at the laptop.'));
+  if (m.what === 'brain') { brainData = d; renderBrain(); }
+  else if (m.what === 'jobs') { jobsData = d; renderJobs(); }
+  else if (m.what === 'approvals') { apprData = d; renderApprovals();
   } else if (m.what === 'desks') {
+    body.appendChild(usageStrip(usageNow));
+    renderDesks(body, d);
+  } else if (m.what === 'mis') {
+    body.appendChild(section('Today’s MIS', d.length ? d : ['No status yet.'], textCard));
+  } else if (m.what === 'connectors') {
+    connectorsView(body, d);
+  }
+}
+function renderDesks(body, d) {
     const colour = s => s === 'working' ? 'var(--primary)' : s === 'waiting for you' ? 'var(--warn)' : s === 'closed' ? 'var(--line)' : 'var(--good)';
     body.appendChild(section('Desks', d, r => {
       const c = el('div', 'card'), row = el('div', 'row'), left = el('div', '');
       left.appendChild(el('div', '', r.title));
-      left.appendChild(el('div', 'sub', r.state + (r.held ? ' · holds a live change' : '') + (r.last ? ' · ' + r.last : '')));
+      left.appendChild(el('div', 'sub', r.state + (r.ctx ? ' · context ' + tokensText(r.ctx) : '') + (r.held ? ' · holds a live change' : '') + (r.last ? ' · ' + r.last : '')));
       const dot = el('span', 'dot'); dot.style.background = colour(r.state);
       row.appendChild(left); row.appendChild(dot); c.appendChild(row); return c;
     }));
-  } else if (m.what === 'mis') {
-    body.appendChild(section('Today’s MIS', d.length ? d : ['No status yet.'], textCard));
-  } else if (m.what === 'connectors') {
+}
+function connectorsView(body, d) {
     body.appendChild(section('Live feeds', d, f => {
       const c = el('div', 'card'), row = el('div', 'row');
       const ok = f.age != null && f.age <= 10;
@@ -761,8 +863,516 @@ function onPanelData(m) {
       const dot = el('span', 'dot'); dot.style.background = ok ? 'var(--good)' : 'var(--endbg)';
       wrap.appendChild(dot); row.appendChild(wrap); c.appendChild(row); return c;
     }));
-  }
 }
+
+// ---------------------------------------------------------------- call screen extras (14 Oct): switches, To, Hold, fix, repeat, end card
+const OPT_KEYS = ['plan', 'quick', 'short', 'handsfree'];
+let opts = { plan: false, quick: false, short: false, handsfree: false }, toRole = 'chief';
+try { const o = JSON.parse(localStorage.getItem('call_opts') || '{}'); OPT_KEYS.forEach(k => { opts[k] = !!o[k]; }); } catch (e) {}
+try { const t = localStorage.getItem('call_to'); if (t && [...$('toRole').options].some(o => o.value === t)) toRole = t; } catch (e) {}
+$('toRole').value = toRole;
+function saveOpts() { try { localStorage.setItem('call_opts', JSON.stringify(opts)); localStorage.setItem('call_to', toRole); } catch (e) {} }
+function sendFlags() { vsend({ t: 'flags', flags: opts, to: toRole }); }   // they travel with every turn, spoken or typed
+function paintOpts() {
+  document.querySelectorAll('#opts [data-opt]').forEach(b => { const on = !!opts[b.dataset.opt]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+  document.body.classList.toggle('handsfree', opts.handsfree);   // hands-free: no text box, keyboard or other typing
+}
+document.querySelectorAll('#opts [data-opt]').forEach(b => b.onclick = () => {
+  const k = b.dataset.opt; opts[k] = !opts[k];
+  if (k === 'plan' && opts.plan) opts.quick = false;
+  if (k === 'quick' && opts.quick) opts.plan = false;
+  saveOpts(); paintOpts(); sendFlags();
+  if (k === 'handsfree' && opts.handsfree) { try { document.activeElement.blur(); } catch (e) {} }
+});
+$('toRole').onchange = () => { toRole = $('toRole').value; saveOpts(); sendFlags(); };
+paintOpts();
+
+// Hold: the PC keeps collecting everything he says as one turn (no end-of-turn guessing) until he taps Done
+const ICON_HOLD = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z"/></svg>';
+const ICON_DONE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
+function paintHold() {
+  $('hold').classList.toggle('on', holding); $('hold').innerHTML = holding ? ICON_DONE : ICON_HOLD;
+  $('hold').setAttribute('aria-label', holding ? 'Done: send all of it' : 'Hold: keep listening until Done');
+  if (holding) hint.textContent = 'Holding. Talk as long as you like, then tap Done.';
+  else if (hint.textContent.startsWith('Holding')) hint.textContent = '';
+  setState(claudeState);
+}
+$('hold').onclick = () => { if (!inCall) return; holding = !holding; vsend({ t: 'gather', on: holding }); paintHold(); };
+
+// fix what it heard: his last turn under the caption; the corrected words replace it and stop the current answer
+let lastHeard = '';
+function showHeard(text) { lastHeard = text; $('heardText').textContent = text; $('heardRow').classList.toggle('hidden', !inCall || !text); }
+$('fixBtn').onclick = () => {
+  if (!lastHeard) return;
+  $('fixBox').classList.remove('hidden'); $('fixText').value = lastHeard; $('fixText').focus();
+};
+$('fixForm').onsubmit = e => {
+  e.preventDefault();
+  const t = $('fixText').value.trim();
+  if (!t || !conn || !conn.open) return;
+  vsend({ t: 'fix', text: t }); $('fixBox').classList.add('hidden'); $('fixText').blur();
+};
+$('fixText').addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $('fixText')) $('fixBox').classList.add('hidden'); }, 200));
+$('repeatBtn').onclick = () => vsend({ t: 'redo', kind: 'repeat' });
+$('shorterBtn').onclick = () => vsend({ t: 'redo', kind: 'shorter' });
+
+// end-of-call card: hand-offs made, asks waiting, the last things it understood (from the PC, after he hangs up)
+function hideEndCard() { $('endCard').classList.add('hidden'); caption.classList.remove('hidden'); }
+async function showEndCard() {
+  const c = $('endCard');
+  c.innerHTML = ''; c.classList.remove('hidden'); caption.classList.add('hidden');
+  c.appendChild(el('div', 'sub', 'Getting the call summary...'));
+  await new Promise(r => setTimeout(r, 1500));
+  const r = await act({ what: 'callsummary' });
+  if (c.classList.contains('hidden')) return;
+  c.innerHTML = '';
+  const close = el('button', 'pill', 'Close'); close.onclick = hideEndCard;
+  const head = el('div', 'row'); head.appendChild(el('b', '', 'Call ended')); head.appendChild(close); c.appendChild(head);
+  if (!r.ok || !r.data) { c.appendChild(el('div', 'sub', 'No summary: the PC did not answer.')); return; }
+  const part = (title, xs, none) => {
+    c.appendChild(el('div', 'eh', `${title} (${xs.length})`));
+    if (!xs.length) c.appendChild(el('div', 'el sub', none));
+    xs.forEach(x => c.appendChild(el('div', 'el', x)));
+  };
+  if (r.data.model) c.appendChild(el('div', 'sub', 'Model on this call: ' + r.data.model[0].toUpperCase() + r.data.model.slice(1)));
+  part('Handed over', r.data.handoffs || [], 'Nothing handed over.');
+  part('Waiting for your yes', r.data.approvals || [], 'Nothing waiting.');
+  part('Last things it understood', r.data.heard || [], 'Nothing heard.');
+  if ((r.data.approvals || []).length) { const b = el('button', 'wide yes', 'Open Approvals'); b.onclick = () => { hideEndCard(); show('approvals'); }; c.appendChild(b); }
+}
+
+// ---------------------------------------------------------------- actions: request and answer over the sidebar link
+let rid = 0;
+const waiters = {};
+function act(payload) {
+  return new Promise(async res => {
+    const id = ++rid; waiters[id] = res;
+    setTimeout(() => { if (waiters[id]) { delete waiters[id]; res({ ok: false, msg: 'The PC did not answer' }); } }, payload.what === 'polish' ? 170000 : 60000);
+    try { (await sideLink()).send({ t: 'act', ...payload, rid: id }); }   // t 'setting' goes to the PC's /host/setting
+    catch (e) { delete waiters[id]; res({ ok: false, msg: 'PC not reachable' }); }
+  });
+}
+
+// every change waits 5 seconds with an Undo before it goes to the PC
+let toastTimer = null;
+function hideToast() { clearTimeout(toastTimer); $('toast').classList.add('hidden'); }
+function toast(text, undo, ms = 5000) {
+  $('toastText').textContent = text;
+  $('toastUndo').classList.toggle('hidden', !undo);
+  $('toastUndo').onclick = () => { hideToast(); undo && undo(); };
+  $('toast').classList.remove('hidden');
+  const bar = $('toastBar'); bar.style.transition = 'none'; bar.style.width = undo ? '100%' : '0'; void bar.offsetWidth;
+  if (undo) { bar.style.transition = `width ${ms}ms linear`; bar.style.width = '0'; }
+  clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, ms);
+}
+const queued = [];
+function later(label, payload, { apply, revert, done } = {}) {
+  apply && apply();
+  const p = { payload, revert, done };
+  p.timer = setTimeout(() => commit(p), 5000);
+  queued.push(p);
+  toast(label, () => {
+    clearTimeout(p.timer); const i = queued.indexOf(p); if (i >= 0) queued.splice(i, 1);
+    revert && revert(); toast('Undone', null, 1500);
+  });
+}
+async function commit(p) {
+  const i = queued.indexOf(p); if (i < 0) return;
+  queued.splice(i, 1); clearTimeout(p.timer);
+  const r = await act(p.payload);
+  if (r.ok) { p.done && p.done(r); if (!queued.length) toast(r.msg || 'Saved', null, 2200); }
+  else { p.revert && p.revert(); toast('Not done: ' + (r.msg || 'error'), null, 4500); }
+  refreshCounts();
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) queued.slice().forEach(commit); });   // leaving the app sends what is waiting
+
+// swipe a card: left and right callbacks past 70 px, tap otherwise; vertical scrolling still works
+function swipeable(card, { left, right, tap }) {
+  const wrap = el('div', 'sw'); wrap.appendChild(card);
+  let x0 = 0, y0 = 0, dx = 0, drag = false, pid = null;
+  card.addEventListener('pointerdown', e => {
+    if (e.target.closest('button, textarea, input, select, a')) return;
+    pid = e.pointerId; x0 = e.clientX; y0 = e.clientY; dx = 0; drag = false; card.style.transition = 'none';
+  });
+  card.addEventListener('pointermove', e => {
+    if (e.pointerId !== pid) return;
+    const mx = e.clientX - x0, my = e.clientY - y0;
+    if (!drag) {
+      if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.3) { drag = true; try { card.setPointerCapture(pid); } catch (x) {} }
+      else if (Math.abs(my) > 10) { pid = null; card.style.transition = ''; }
+      return;
+    }
+    if ((mx < 0 && !left) || (mx > 0 && !right)) { dx = 0; card.style.transform = ''; return; }
+    dx = mx; card.style.transform = `translateX(${dx}px)`;
+    wrap.classList.toggle('goL', dx < -24); wrap.classList.toggle('goR', dx > 24);
+  });
+  const end = e => {
+    if (e.pointerId !== pid) return;
+    pid = null; card.style.transition = ''; card.style.transform = ''; wrap.classList.remove('goL', 'goR');
+    if (drag) { if (dx < -70 && left) left(); else if (dx > 70 && right) right(); }
+    else if (e.type === 'pointerup' && tap && Math.abs(e.clientX - x0) < 8 && Math.abs(e.clientY - y0) < 8) tap();
+    drag = false;
+  };
+  card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
+  return wrap;
+}
+
+// bottom sheet for actions and notes
+function openSheet(build) { const b = $('actBody'); b.innerHTML = ''; b.appendChild(el('div', 'grab')).remove(); build(b); $('act').classList.remove('hidden'); }
+function closeSheet() { $('act').classList.add('hidden'); try { document.activeElement.blur(); } catch (e) {} }
+$('act').onclick = e => { if (e.target.id === 'act') closeSheet(); };
+function btnRow(defs, cls = 'btns wrap') {
+  const r = el('div', cls);
+  defs.forEach(([label, fn, c]) => { const b = el('button', c || '', label); b.onclick = fn; r.appendChild(b); });
+  return r;
+}
+function datePick(label, fn) {   // a button that opens the phone's own date picker
+  const l = el('label', 'datebtn'); l.appendChild(el('span', '', label));
+  const i = el('input'); i.type = 'date'; i.min = todayKey(); i.setAttribute('aria-label', label);
+  i.onchange = () => { if (i.value) fn(i.value); };
+  i.onclick = () => { try { i.showPicker(); } catch (e) {} };
+  l.appendChild(i); return l;
+}
+const short = (t, n) => (t = String(t || '')).length > n ? t.slice(0, n - 1) + '…' : t;
+const todayKey = () => new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);   // IST date
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function dayLabel(v) {
+  const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(v || '');
+  if (m) return `${+m[3]} ${MONTHS[+m[2] - 1]}`;
+  return { today: 'Today', tomorrow: 'Tomorrow', fri: 'Fri', mon: 'Mon' }[v] || v || '';
+}
+const GIVE = ['Ops', 'Dev', 'Growth', 'Data', 'Research', 'PM', 'Studio'];
+
+// ---------------------------------------------------------------- Brain: filters, swipe actions, notes, triage
+let brainData = null, brainFilter = '', triage = null;
+try { brainFilter = localStorage.getItem('brainFilter') || ''; } catch (e) {}
+let acted = { day: '', ids: {} };   // what he did on the phone today, laid over the list until Brain catches up
+try { acted = JSON.parse(localStorage.getItem('brainActed') || '{}'); } catch (e) {}
+if (!acted || acted.day !== todayKey()) acted = { day: todayKey(), ids: {} };
+function saveActed() { try { localStorage.setItem('brainActed', JSON.stringify(acted)); } catch (e) {} }
+function setActed(id, patch) {
+  const old = acted.ids[id];
+  acted.ids[id] = { ...(old || {}), ...patch }; saveActed();
+  return () => { if (old) acted.ids[id] = old; else delete acted.ids[id]; saveActed(); };
+}
+function itemView(it) {
+  const a = acted.ids[it.id];
+  if (!a) return it;
+  if (a.gone) return null;
+  const x = { ...it, f: [...it.f] };
+  for (const k of ['pri', 'due', 'remind', 'give', 'noted']) if (a[k]) x[k] = a[k];
+  if (a.pri || a.due || a.remind) {
+    x.f = x.f.filter(f => f !== 'needs' && !(a.due && f === 'overdue'));
+    if (!(x.pri && x.due) && !x.remind && x.kind !== 'wait') x.f.push('needs');
+    if (a.due === 'Today' && !x.f.includes('today')) x.f.push('today');
+  }
+  return x;
+}
+function brainItems() { return ((brainData && brainData.items) || []).map(itemView).filter(Boolean); }
+function rerenderBrain() { if (currentView === 'brain' && brainData) renderBrain(); }
+const FILTERS = [['overdue', 'Overdue'], ['today', 'Today'], ['waiting', 'Waiting'], ['needs', 'Needs you']];
+
+function brainDo(it, action, value = '', note = '', extra = {}) {
+  const label = { done: 'Done', drop: 'Dropped', hide: 'Hidden', priority: 'Priority ' + value, due: 'Deadline ' + dayLabel(value),
+                  remind: 'Remind ' + dayLabel(value), give: 'Give to ' + value, note: 'Note saved', job: 'Job for Chief',
+                  set: 'Saved ' + [extra.priority, extra.due && dayLabel(extra.due)].filter(Boolean).join(', ') }[action];
+  const patch = { done: { gone: 1 }, drop: { gone: 1 }, hide: { gone: 1 }, priority: { pri: value }, due: { due: dayLabel(value) },
+                  remind: { remind: dayLabel(value) }, give: { give: value }, note: { noted: 'note added' }, job: { give: 'Chief' },
+                  set: { ...(extra.priority ? { pri: extra.priority } : {}), ...(extra.due ? { due: dayLabel(extra.due) } : {}) } }[action];
+  let undo = null;
+  later(`${label}: ${short(it.text, 34)}`, { what: 'brain', id: it.id, action, value, note, ...extra }, {
+    apply: () => { undo = setActed(it.id, patch); rerenderBrain(); },
+    revert: () => { undo && undo(); rerenderBrain(); },
+  });
+}
+
+function renderBrain() {
+  const body = $('panelBody'), d = brainData;
+  body.innerHTML = '';
+  if (!d) { body.appendChild(el('div', 'empty', 'Loading...')); return; }
+  if (triage) return renderTriage(body);
+  const items = brainItems(), count = f => items.filter(i => i.f.includes(f)).length;
+  $('b-brain').textContent = count('overdue') ? String(count('overdue')) : '';
+  if (!FILTERS.some(([k]) => k === brainFilter)) brainFilter = count('overdue') ? 'overdue' : 'today';
+  if (d.meetings && d.meetings.length) body.appendChild(section('Meetings', d.meetings, textCard));
+  const chips = el('div', 'chips');
+  FILTERS.forEach(([k, label]) => {
+    const b = el('button', 'pill' + (k === brainFilter ? ' on' : ''), `${label} ${count(k)}`);
+    b.setAttribute('aria-pressed', String(k === brainFilter));
+    b.onclick = () => { brainFilter = k; try { localStorage.setItem('brainFilter', k); } catch (e) {} renderBrain(); };
+    chips.appendChild(b);
+  });
+  if (count('needs')) { const t = el('button', 'pill go', 'Triage'); t.onclick = startTriage; chips.appendChild(t); }
+  body.appendChild(chips);
+  const list = items.filter(i => i.f.includes(brainFilter));
+  if (!list.length) body.appendChild(el('div', 'empty', 'Nothing here.'));
+  list.forEach(it => body.appendChild(brainCard(it)));
+  if (list.length) body.appendChild(el('div', 'refresh', 'Swipe left for actions, right for a note. Every change has 5 seconds to undo.'));
+  if (d.done && d.done.length) body.appendChild(section('Done today', d.done, textCard));
+  const r = el('button', 'refresh linkish', `Brain as of ${d.updated || 'now'} · tap to refresh`); r.onclick = () => loadPanel('brain');
+  body.appendChild(r);
+}
+function brainCard(it) {
+  const c = el('div', 'card item');
+  c.appendChild(el('div', 'it', it.text));
+  const sub = el('div', 'sub');
+  if (it.pri) sub.appendChild(el('span', 'tag ' + it.pri, it.pri));
+  sub.appendChild(document.createTextNode([it.due && 'due ' + it.due, it.remind && 'remind ' + it.remind, it.give && 'with ' + it.give,
+    it.noted, it.inside ? it.inside + ' inside' : '', it.where].filter(Boolean).join(' · ')));
+  c.appendChild(sub);
+  return swipeable(c, { left: () => brainSheet(it), right: () => noteSheet(it), tap: () => brainSheet(it) });
+}
+function brainSheet(it) {
+  openSheet(b => {
+    b.appendChild(el('div', 'sheet-title', it.text));
+    b.appendChild(el('div', 'sub', [it.where, it.pri && it.pri + ' priority', it.due && 'due ' + it.due, it.remind && 'remind ' + it.remind].filter(Boolean).join(' · ')));
+    const go = (a, v) => () => { closeSheet(); brainDo(it, a, v); };
+    b.appendChild(btnRow([['Done', go('done'), 'yes'], ['Drop', go('drop')], ['Hide', go('hide')]]));
+    b.appendChild(el('h4', '', 'Priority'));
+    b.appendChild(btnRow([['High', go('priority', 'high'), it.pri === 'high' ? 'on' : ''], ['Mid', go('priority', 'mid'), it.pri === 'mid' ? 'on' : ''], ['Low', go('priority', 'low'), it.pri === 'low' ? 'on' : '']]));
+    b.appendChild(el('h4', '', 'Deadline'));
+    const dr = btnRow([['Today', go('due', 'today')], ['Tomorrow', go('due', 'tomorrow')]]);
+    dr.appendChild(datePick('Pick date', v => { closeSheet(); brainDo(it, 'due', v); })); b.appendChild(dr);
+    b.appendChild(el('h4', '', 'Remind me'));
+    const rr = btnRow([['Tomorrow', go('remind', 'tomorrow')], ['Mon', go('remind', 'mon')]]);
+    rr.appendChild(datePick('Pick date', v => { closeSheet(); brainDo(it, 'remind', v); })); b.appendChild(rr);
+    b.appendChild(el('h4', '', 'Give to (becomes a job)'));
+    b.appendChild(btnRow(GIVE.map(r => [r, go('give', r)])));
+  });
+}
+function noteSheet(it) {
+  openSheet(b => {
+    b.appendChild(el('div', 'sheet-title', it.text));
+    const ta = el('textarea', 'note'); ta.rows = 3; ta.placeholder = 'Your note, or what to do (the keyboard mic works)'; b.appendChild(ta);
+    const row = el('label', 'row switchrow'); row.appendChild(el('span', '', 'Do it: send to Chief as a job'));
+    const sw = el('input', 'switch'); sw.type = 'checkbox'; sw.setAttribute('role', 'switch'); row.appendChild(sw); b.appendChild(row);
+    const send = el('button', 'wide yes', 'Save note');
+    sw.onchange = () => { send.textContent = sw.checked ? 'Send to Chief' : 'Save note'; };
+    send.onclick = () => { const n = ta.value.trim(); if (!n) { ta.focus(); return; } closeSheet(); brainDo(it, sw.checked ? 'job' : 'note', '', n); };
+    b.appendChild(send);
+    setTimeout(() => ta.focus(), 150);
+  });
+}
+function startTriage() {
+  triage = { ids: brainItems().filter(i => i.f.includes('needs')).map(i => i.id), i: 0, pick: {} };
+  renderBrain();
+}
+function nextTri() { triage.i++; triage.pick = {}; renderBrain(); }
+function renderTriage(body) {
+  const byId = Object.fromEntries(brainItems().map(i => [i.id, i]));
+  while (triage.i < triage.ids.length && !byId[triage.ids[triage.i]]) triage.i++;   // gone meanwhile
+  const n = triage.ids.length, top = el('div', 'row triagebar');
+  const back = el('button', 'pill', 'Back to list'); back.onclick = () => { triage = null; renderBrain(); };
+  top.appendChild(back); top.appendChild(el('span', 'sub', `${Math.min(triage.i + 1, n)} of ${n}`)); body.appendChild(top);
+  if (triage.i >= n) { body.appendChild(el('div', 'empty', 'All done.')); return; }
+  const it = byId[triage.ids[triage.i]], pick = triage.pick;
+  const c = el('div', 'card big'); c.appendChild(el('div', 'it', it.text));
+  c.appendChild(el('div', 'sub', [it.where, it.pri && it.pri + ' priority', it.due && 'due ' + it.due].filter(Boolean).join(' · '))); body.appendChild(c);
+  const save = () => { if (!pick.pri && !pick.due) return; brainDo(it, 'set', '', '', { priority: pick.pri || '', due: pick.due || '' }); nextTri(); };
+  const chose = () => { if (pick.pri && pick.due) save(); else renderBrain(); };   // both picked: saved and on to the next
+  body.appendChild(el('h4', '', 'Priority'));
+  body.appendChild(btnRow(['high', 'mid', 'low'].map(p => [p[0].toUpperCase() + p.slice(1), () => { pick.pri = p; chose(); }, pick.pri === p ? 'on' : '']), 'btns big'));
+  body.appendChild(el('h4', '', 'Deadline'));
+  const dr = btnRow([['today', 'Today'], ['tomorrow', 'Tomorrow'], ['fri', 'Fri'], ['mon', 'Mon']].map(([v, l]) => [l, () => { pick.due = v; chose(); }, pick.due === v ? 'on' : '']));
+  dr.appendChild(datePick(/^\d{4}/.test(pick.due || '') ? dayLabel(pick.due) : 'Pick date', v => { pick.due = v; chose(); })); body.appendChild(dr);
+  const end = btnRow([['Drop', () => { brainDo(it, 'drop'); nextTri(); }], ['Hide', () => { brainDo(it, 'hide'); nextTri(); }],
+                      ['Skip', nextTri], ['Save', save, 'yes']], 'btns');
+  end.style.marginTop = '22px'; body.appendChild(end);
+}
+
+// ---------------------------------------------------------------- Jobs: the team's open jobs
+let jobsData = null;
+const jobOpen = {}, jobGone = {}, jobSent = {};
+function ageText(m) { if (m == null) return ''; if (m < 1) return 'just now'; if (m < 60) return m + ' min ago'; if (m < 1440) return Math.round(m / 60) + ' h ago'; return Math.round(m / 1440) + ' d ago'; }
+function renderJobs() {
+  const body = $('panelBody'), d = jobsData || {};
+  body.innerHTML = '';
+  const open = (d.open || []).filter(j => !jobGone[j.id]);
+  $('b-jobs').textContent = open.length ? String(open.length) : '';
+  if (!open.length) body.appendChild(el('div', 'empty', 'No open jobs.'));
+  else {
+    body.appendChild(section(`Open (${open.length})`, open, jobCard));
+    body.appendChild(el('div', 'refresh', 'Tap for details. Swipe left to nudge, cancel or close.'));
+  }
+  if ((d.closed || []).length) body.appendChild(section('Closed today', d.closed, j => el('div', 'card sub', `${j.id} · ${j.owner} · ${j.status}: ${j.title}`)));
+  const r = el('button', 'refresh linkish', 'Tap to refresh'); r.onclick = () => loadPanel('jobs'); body.appendChild(r);
+}
+function jobCard(j) {
+  const c = el('div', 'card'), row = el('div', 'row');
+  row.appendChild(el('b', '', `${j.id} · ${j.owner}`)); row.appendChild(el('span', 'tag st-' + j.status, j.status.replace(/-/g, ' ')));
+  c.appendChild(row); c.appendChild(el('div', 'it', j.title));
+  c.appendChild(el('div', 'sub', [j.age != null && 'updated ' + ageText(j.age), j.from && 'from ' + j.from, jobSent[j.id]].filter(Boolean).join(' · ')));
+  if (jobOpen[j.id]) {
+    const det = el('div', 'det');
+    if (j.brief) det.appendChild(el('div', '', 'Brief: ' + j.brief));
+    (j.notes || []).forEach(n => det.appendChild(el('div', 'sub', n)));
+    det.appendChild(el('div', j.result ? '' : 'sub', 'Result: ' + (j.result || 'none yet')));
+    c.appendChild(det);
+  }
+  return swipeable(c, { left: () => jobSheet(j), tap: () => { jobOpen[j.id] = !jobOpen[j.id]; renderJobs(); } });
+}
+function jobSheet(j) {
+  const rr = () => { if (currentView === 'jobs' && jobsData) renderJobs(); };
+  const go = a => () => {
+    closeSheet();
+    later(`${{ nudge: 'Nudge', cancel: 'Cancel', done: 'Close' }[a]} ${j.id}`, { what: 'job', id: j.id, action: a }, {
+      apply: () => { if (a === 'done') jobGone[j.id] = 1; else jobSent[j.id] = a + ' sent'; rr(); },
+      revert: () => { delete jobGone[j.id]; delete jobSent[j.id]; rr(); },
+    });
+  };
+  openSheet(b => {
+    b.appendChild(el('div', 'sheet-title', `${j.id} · ${j.owner}: ${j.title}`));
+    b.appendChild(el('div', 'sub', `${j.status.replace(/-/g, ' ')} · updated ${ageText(j.age)}`));
+    b.appendChild(btnRow([['Nudge', go('nudge')], ['Cancel', go('cancel')], ['Done', go('done'), 'yes']]));
+  });
+}
+
+// ---------------------------------------------------------------- Approvals: full draft, edit in place, write it properly
+let apprData = [];
+const drafts = {}, apprGone = {};
+function renderApprovals() {
+  const body = $('panelBody');
+  body.innerHTML = '';
+  const list = (apprData || []).filter(a => !apprGone[a.n + '|' + a.text]);
+  $('b-approvals').textContent = list.length ? String(list.length) : '';
+  if (!list.length) { body.appendChild(el('div', 'empty', 'Nothing is waiting for your yes.')); return; }
+  body.appendChild(section(`Waiting for your answer (${list.length})`, list, apprCard));
+  body.appendChild(el('div', 'refresh', 'Tap the text to edit it. Live-system changes still need Approve at the laptop.'));
+}
+function apprCard(a) {
+  const c = el('div', 'card'), key = a.n + '|' + a.text;
+  c.appendChild(el('div', 'sub', [a.n != null ? 'Ask ' + a.n : '', a.desk, a.job, a.at].filter(Boolean).join(' · ')));
+  let ta = null;
+  if (a.editable && a.n != null) {
+    ta = el('textarea', 'draft'); ta.value = drafts[key] != null ? drafts[key] : a.text; ta.setAttribute('aria-label', 'Draft text, tap to edit');
+    const grow = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+    ta.oninput = () => { drafts[key] = ta.value; grow(); paint(); };
+    c.appendChild(ta); requestAnimationFrame(grow);
+  } else {
+    c.appendChild(el('div', 'drafttext', a.text));
+    if (!a.editable) c.appendChild(el('div', 'sub', 'Has an address or phone number: edit this one at the laptop.'));
+  }
+  const btns = el('div', 'btns wrap'); c.appendChild(btns);
+  const changed = () => ta && ta.value.trim() !== a.text.trim();
+  function paint() {
+    btns.innerHTML = '';
+    if (!changed()) {
+      btns.appendChild(btnRow([['No', () => answer(a, 'no')], ['Yes', () => answer(a, 'yes'), 'yes']], 'btns wrap'));
+      btns.firstChild.style.margin = '0'; btns.firstChild.style.flex = '1';
+      return;
+    }
+    const reset = el('button', '', 'Reset'); reset.onclick = () => { delete drafts[key]; ta.value = a.text; ta.oninput(); };
+    const pol = el('button', '', 'Write it properly');
+    pol.onclick = async () => {
+      pol.disabled = true; pol.textContent = 'Writing...';
+      const r = await act({ what: 'polish', n: a.n, text: ta.value });
+      if (r.ok && r.text) { ta.value = r.text; ta.oninput(); toast(r.msg || 'Check it, then Send edited.', null, 3500); }
+      else { pol.disabled = false; pol.textContent = 'Write it properly'; toast(r.msg || 'Could not write it.', null, 4500); }
+    };
+    const send = el('button', 'yes', 'Send edited'); send.onclick = () => answer(a, 'edited', ta.value.trim());
+    [reset, pol, send].forEach(b => btns.appendChild(b));
+  }
+  paint();
+  return c;
+}
+function answer(a, verb, text = '') {
+  const key = a.n + '|' + a.text, rr = () => { if (currentView === 'approvals') renderApprovals(); };
+  later(verb === 'edited' ? `Ask ${a.n}: send edited text` : `Ask ${a.n}: ${verb}`, { what: 'approve', n: a.n, action: verb, text }, {
+    apply: () => { apprGone[key] = 1; rr(); },
+    revert: () => { delete apprGone[key]; rr(); },
+    done: () => { delete drafts[key]; setTimeout(() => { if (currentView === 'approvals') loadPanel('approvals'); }, 1500); },
+  });
+}
+
+// ---------------------------------------------------------------- usage strip (deck's band numbers) and the model picker
+let usageNow = null;
+const tokensText = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : Math.round(n / 1000) + 'k';
+const heat = pct => pct > 90 ? 'red' : pct > 70 ? 'amber' : 'ok';
+function usageStrip(u, target) {
+  const box = target || el('div', 'ustrip');
+  box.innerHTML = '';
+  if (!u) { box.appendChild(el('span', '', 'Usage shows once a desk runs deck 0.10.1')); return box; }
+  const part = (label, w) => {
+    if (!w) return;
+    const sp = el('span', ''); sp.appendChild(document.createTextNode(label + ' '));
+    sp.appendChild(el('b', heat(w.pct), w.pct + '%'));
+    if (w.reset) sp.appendChild(document.createTextNode(' → ' + w.reset));
+    box.appendChild(sp);
+  };
+  part('5h', u.five); part('7d', u.seven);
+  if (u.cache != null) { const sp = el('span', '', 'cache '); sp.appendChild(el('b', '', u.cache + '%')); box.appendChild(sp); }
+  const c = el('span', '', 'today '); c.appendChild(el('b', '', '$' + Number(u.today).toFixed(2)));
+  if (u.last != null) c.appendChild(document.createTextNode(' +' + Number(u.last).toFixed(2)));
+  c.appendChild(document.createTextNode(' · week $' + Number(u.week).toFixed(0)));
+  box.appendChild(c);
+  return box;
+}
+function paintUsage(u) { usageNow = u || null; usageStrip(usageNow, $('ustrip')); }
+let modelNow = 'sonnet';
+function paintModel(m) { if (!m) return; modelNow = m; $('modelChip').value = m; $('modelSet').value = m; }
+async function pickModel(v) {
+  const was = modelNow; paintModel(v);
+  const r = await act({ what: 'setting', key: 'voice_model', value: v, t: 'setting' });
+  if (r.ok) toast((r.msg || v) + '.', null, 2500); else { paintModel(was); toast('Not changed: ' + (r.msg || 'error'), null, 4000); }
+}
+$('modelChip').onchange = () => pickModel($('modelChip').value);
+$('modelSet').onchange = () => pickModel($('modelSet').value);
+
+// ---------------------------------------------------------------- Chat tab: the WhatsApp chat "Claude", read on the PC; typing goes to Chief
+let chatTimer = null, chatSig = '';
+async function loadChat(first) {
+  clearTimeout(chatTimer);
+  if (currentView !== 'chat') return;
+  const th = $('thread');
+  if (first && !th.children.length) th.appendChild(el('div', 'empty', 'Loading...'));
+  try { await ask({ t: 'panel', what: 'chat' }); }
+  catch (e) { if (first) { th.innerHTML = ''; th.appendChild(el('div', 'empty', 'Could not reach the PC. Is it on?')); } }
+  chatTimer = setTimeout(() => { if (!document.hidden) loadChat(false); else chatTimer = setTimeout(() => loadChat(false), 4000); }, 4000);
+}
+function renderChat(d) {
+  const th = $('thread');
+  const sig = JSON.stringify(d.msgs || []);
+  if (sig === chatSig && th.children.length) return;   // nothing new: keep his scroll place
+  chatSig = sig;
+  const atEnd = th.scrollHeight - th.scrollTop - th.clientHeight < 60;
+  th.innerHTML = '';
+  if (!d.ok) th.appendChild(el('div', 'refresh', 'WhatsApp is not reachable on the PC; showing what the app has.'));
+  if (!(d.msgs || []).length) th.appendChild(el('div', 'empty', 'No messages yet.'));
+  (d.msgs || []).forEach(m => {
+    const b = el('div', 'bub ' + m.who, m.text);
+    b.appendChild(el('span', 'tm', m.time + (m.app ? ' · from the app' : '')));
+    th.appendChild(b);
+  });
+  if (atEnd || !th.dataset.seen) { th.scrollTop = th.scrollHeight; th.dataset.seen = '1'; }
+}
+$('chatForm').onsubmit = async e => {
+  e.preventDefault();
+  const t = $('chatText').value.trim();
+  if (!t) return;
+  $('chatText').value = '';
+  const th = $('thread'); const b = el('div', 'bub me', t); b.appendChild(el('span', 'tm', 'sending...')); th.appendChild(b); th.scrollTop = th.scrollHeight;
+  const r = await act({ what: 'chat', text: t });
+  if (!r.ok) { b.lastChild.textContent = 'not sent: ' + (r.msg || 'error'); $('chatText').value = t; return; }
+  chatSig = ''; loadChat(false);
+};
+
+// ---------------------------------------------------------------- PC reachable dot and rail badges (the sidebar link's heartbeat)
+let lastPong = 0;
+function paintDot() {
+  const ok = Date.now() - lastPong < 50000, d = $('pcDot');
+  d.classList.toggle('on', ok); d.title = ok ? 'PC reachable' : 'PC not reachable'; d.setAttribute('aria-label', d.title);
+}
+async function beat() { if (document.hidden) return; try { (await sideLink()).send({ t: 'ping' }); } catch (e) {} paintDot(); }
+async function refreshCounts() {
+  const r = await act({ what: 'counts' });
+  if (!r.ok || !r.data) return;
+  const set = (id, n) => { $(id).textContent = n ? String(n) : ''; };
+  set('b-brain', r.data.overdue); set('b-approvals', r.data.approvals); set('b-jobs', r.data.jobs);
+  paintModel(r.data.model); paintUsage(r.data.usage);
+}
+setInterval(beat, 20000); setInterval(paintDot, 5000); setInterval(refreshCounts, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+setTimeout(() => { beat(); refreshCounts(); }, 800);
 
 // ---------------------------------------------------------------- reload and updates
 // The reload button loads the latest version. The app also checks for a newer version every two minutes and, when one
