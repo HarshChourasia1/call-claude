@@ -253,7 +253,7 @@ const bars = [...document.querySelectorAll('#wave i')], shape = [0.6, 0.85, 1, 0
 function animate() {
   if (!inCall) { bars.forEach(b => { b.style.height = ''; }); document.body.classList.remove('talking'); return; }
   const lvl = clipPlaying ? 0.03 + 0.03 * Math.abs(Math.sin(Date.now() / 160))
-            : claudeState === 'speaking' ? levelOf(remoteLevel) * 2.2 : (muted ? 0 : levelOf(micLevel) * 3);
+            : claudeState === 'speaking' ? levelOf(remoteLevel) * 2.2 : (muted ? 0 : (useVad ? vadLevel : levelOf(micLevel)) * 3);
   smooth = smooth * 0.6 + Math.min(lvl * 8, 1) * 0.4;
   if (claudeState !== 'thinking') bars.forEach((b, i) => { b.style.height = (6 + smooth * 30 * shape[i] * (0.8 + Math.random() * 0.4)) + 'px'; });
   document.body.classList.toggle('talking', smooth > 0.08);
@@ -261,11 +261,60 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
+// ---------------------------------------------------------------- recording on the phone (laptop mode)
+// The phone's own speech detector cuts out each stretch of his speech, with 0.6 s before it so the first word is never
+// lost, and sends it as a clean 16 kHz recording. Streaming the mic over the call made it muffled and clipped (13 Oct test:
+// the call's own processing, compression and relay garbled fast speech). Falls back to streaming if the detector can't load.
+const ORT_BASE = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/';
+const VAD_BASE = 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.31/dist/';
+let vadLib = null, vad = null, useVad = false, vadLevel = 0;
+function loadScript(src) {
+  return new Promise((ok, fail) => { const e = document.createElement('script'); e.src = src; e.onload = ok; e.onerror = fail; document.head.appendChild(e); });
+}
+async function loadVad() {
+  if (vadLib) return vadLib;
+  await loadScript(ORT_BASE + 'ort.wasm.min.js');
+  await loadScript(VAD_BASE + 'bundle.min.js');
+  if (!window.vad || !window.vad.MicVAD) throw new Error('detector missing');
+  return (vadLib = window.vad);
+}
+function wav16(f32) {
+  const b = new ArrayBuffer(44 + f32.length * 2), v = new DataView(b);
+  const w = (p, t) => [...t].forEach((ch, i) => v.setUint8(p + i, ch.charCodeAt(0)));
+  w(0, 'RIFF'); v.setUint32(4, 36 + f32.length * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 16000, true); v.setUint32(28, 32000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, f32.length * 2, true);
+  for (let i = 0, o = 44; i < f32.length; i++, o += 2) v.setInt16(o, Math.max(-1, Math.min(1, f32[i])) * 32767, true);
+  return b;
+}
+const vsend = m => { try { if (conn && conn.open) conn.send(m); } catch (e) {} };
+async function startVad() {
+  const lib = await loadVad();
+  vad = await lib.MicVAD.new({
+    model: 'v5', baseAssetPath: VAD_BASE, onnxWASMBasePath: ORT_BASE, startOnLoad: false,
+    // echo cancelling stays on (so Claude's voice on the speaker is not taken as his); the other two processing steps
+    // are off, as speech-recognition makers advise (they blur word edges)
+    getStream: () => navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: false, autoGainControl: false } }),
+    positiveSpeechThreshold: 0.5, negativeSpeechThreshold: 0.35, redemptionMs: 600, preSpeechPadMs: 600, minSpeechMs: 250,
+    onSpeechStart: () => { vsend({ t: 'vstart' }); if (claudeState !== 'speaking') setState('listening'); },
+    onVADMisfire: () => vsend({ t: 'vmiss' }),
+    onSpeechEnd: audio => { vsend({ t: 'seg', wav: wav16(audio) }); },
+    onFrameProcessed: (probs, frame) => {
+      let sum = 0; for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
+      vadLevel = Math.sqrt(sum / frame.length);
+    },
+  });
+}
+
 // the phone streams its microphone like any call app; the PC decides when Harsh has finished and when he cuts in
 async function call() {
   setState('connecting'); hint.textContent = '';
   actx = new AudioContext();
-  if (stt !== 'google') {   // laptop mode: stream the microphone; Google mode: one mic user at a time, so none here
+  useVad = false;
+  if (stt === 'laptop' && h.get('stream') !== '1') {
+    try { await startVad(); useVad = true; }
+    catch (e) { hint.textContent = 'Speech detector did not load; streaming the microphone instead.'; try { vad && vad.destroy(); } catch (x) {} vad = null; }
+  }
+  if (stt !== 'google' && !useVad) {   // fallback: stream the microphone; Google mode: one mic user at a time, so none here
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     } catch (e) { hint.textContent = 'Microphone blocked: allow it for this page.'; setState('ready'); wantCall = false; return; }
@@ -284,6 +333,7 @@ async function call() {
   });
   peer.on('call', c => {
     if (stream) c.answer(stream); else c.answer();   // Google mode: Claude's voice comes in, Harsh's words go as text
+    watchIce(c.peerConnection);
     c.on('stream', s => {
       remote.srcObject = s; remote.play().then(() => dbg('voice playing')).catch(e => dbg('voice blocked ' + e.name));
       try { remoteLevel = actx.createAnalyser(); remoteLevel.fftSize = 1024; actx.createMediaStreamSource(s).connect(remoteLevel); } catch (e) {}
@@ -292,7 +342,9 @@ async function call() {
   peer.on('open', () => {
     conn = peer.connect(PEER, { reliable: true });
     conn.on('open', () => {
-      conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1', stt, redial: !!redialing, clips: false });
+      conn.send({ t: 'hello', key: KEY, test: h.get('autocall') === '1', stt, redial: !!redialing, clips: false, vad: useVad });
+      if (useVad && !muted) vad.start();
+      lastData = Date.now(); watchIce(conn.peerConnection);
       if (!callStart) callStart = Date.now();
       inCall = true; showCallControls(true); setState('idle');
       hint.textContent = stt === 'google' ? 'Tap the screen to cut Claude off.' : ''; animate();
@@ -300,6 +352,8 @@ async function call() {
       if (!muted && !clipPlaying) startRec();
     });
     conn.on('data', m => {
+      lastData = Date.now();
+      if (m.t === 'pong') return;
       if (m.t === 'audio' && m.data) onClip(m);
       else if (m.t === 'line') { line(m.who, m.text); if (m.who === 'claude') { recentClaude.push(m.text); recentClaude = recentClaude.slice(-6); } }
       else if (m.t === 'state') {
@@ -313,6 +367,21 @@ async function call() {
   peer.on('disconnected', () => dropped());
   setTimeout(() => { if (!inCall && peer && !redialing) { hint.textContent = 'The PC did not answer. Is it on?'; hangup(false); } }, 20000);
 }
+
+let lastData = 0;
+function watchIce(pc) {
+  if (!pc || pc._watched) return; pc._watched = true;
+  pc.addEventListener('iceconnectionstatechange', () => {
+    const st = pc.iceConnectionState;
+    if (st === 'failed') { dbg('line failed'); dropped(); }
+    if (st === 'disconnected') setTimeout(() => { if (pc.iceConnectionState === 'disconnected' && inCall) { dbg('line lost 5 s'); dropped(); } }, 5000);
+  });
+}
+setInterval(() => {
+  if (!inCall || !conn || !conn.open) return;
+  try { conn.send({ t: 'ping' }); } catch (e) {}
+  if (lastData && Date.now() - lastData > 15000) { dbg('no answer from the PC for 15 s'); dropped(); }
+}, 5000);
 
 // the line dropped but he did not press End: call back by itself for two minutes, and when the screen comes back on
 let wantCall = false, redialing = null;
@@ -340,6 +409,7 @@ function hangup(tell = true, keepWanting = false) {
   if (!keepWanting) { wantCall = false; if (redialing) { clearInterval(redialing); redialing = null; } }
   if (tell && conn && conn.open) { try { conn.send({ t: 'bye' }); } catch (e) {} }
   inCall = false; stopRec(); clips = []; clipPlaying = false; try { clipEl.pause(); } catch (e) {}
+  try { vad && vad.destroy(); } catch (e) {} vad = null; useVad = false; vadLevel = 0; lastData = 0;
   setTimeout(() => { try { peer && peer.destroy(); } catch (e) {} peer = null; conn = null; }, 300);
   try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
   try { actx && actx.close(); } catch (e) {}
@@ -361,6 +431,7 @@ function updateMute() {
   $('mute').classList.toggle('on', muted);
   $('muteLabel').textContent = muted ? 'Unmute' : 'Mute';
   if (stream) stream.getAudioTracks().forEach(t => { t.enabled = !muted; });
+  if (vad) { try { muted ? vad.pause() : vad.start(); } catch (e) {} }
   if (inCall) { if (muted) stopRec(); else startRec(); setState(claudeState); }
 }
 $('mute').onclick = () => { muted = !muted; updateMute(); };
