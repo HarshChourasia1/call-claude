@@ -88,11 +88,13 @@ async function call() {
   try { wake = await navigator.wakeLock?.request('screen'); } catch (e) {}
   if ('mediaSession' in navigator) {   // shows as an ongoing call in the notification shade, and keeps audio focus
     navigator.mediaSession.metadata = new MediaMetadata({ title: 'Call with Claude', artist: 'Claude', artwork: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' }] });
-    navigator.mediaSession.setActionHandler('hangup', () => hangup(true));
   }
 
   peer = new Peer({ debug: 1 });
-  peer.on('error', e => { hint.textContent = 'Could not reach the PC (' + e.type + '). Is it on?'; hangup(false); });
+  peer.on('error', e => {
+    if (redialing) { hangup(false, true); return; }   // calling back: keep trying quietly
+    hint.textContent = 'Could not reach the PC (' + e.type + '). Is it on?'; hangup(false);
+  });
   peer.on('call', c => {
     c.answer(stream);   // the microphone goes to the PC as live call audio (echo-cancelled by the phone)
     c.on('stream', s => { remote.srcObject = s; remote.play().catch(() => {}); });
@@ -109,12 +111,33 @@ async function call() {
       if (m.t === 'line') line(m.who, m.text);
       else if (m.t === 'state') { claudeState = m.s; setState(m.s === 'idle' ? 'on call' : m.s, true); hint.textContent = m.s === 'listening' ? 'Listening...' : ''; }
     });
-    conn.on('close', () => hangup(false));
+    conn.on('close', () => dropped());
   });
+  peer.on('disconnected', () => dropped());
   setTimeout(() => { if (!inCall && peer) { hint.textContent = 'The PC did not answer. Is it on?'; hangup(false); } }, 20000);
 }
 
-function hangup(tell = true) {
+// The link dropped but Harsh did not press End (Android paused the page, the network changed): call back by itself,
+// every few seconds for two minutes, and again as soon as the screen is back on. Claude keeps the conversation.
+let wantCall = false, redialing = null;
+function dropped() {
+  if (!wantCall || redialing) return;
+  hangup(false, true);
+  hint.textContent = 'Line dropped. Calling back...';
+  let tries = 0;
+  redialing = setInterval(() => {
+    if (!wantCall || inCall || ++tries > 40) { clearInterval(redialing); redialing = null; if (!inCall && wantCall) hint.textContent = 'Could not call back. Tap Call.'; return; }
+    if (!peer && !document.hidden) call();
+  }, 3000);
+}
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) return;
+  if (inCall) { try { wake = await navigator.wakeLock?.request('screen'); } catch (e) {} }
+  if (wantCall && !inCall && !peer) call();
+});
+
+function hangup(tell = true, keepWanting = false) {
+  if (!keepWanting) { wantCall = false; if (redialing) { clearInterval(redialing); redialing = null; } }
   if (tell && conn && conn.open) { try { conn.send({ t: 'bye' }); } catch (e) {} }
   inCall = false;
   setTimeout(() => { try { peer && peer.destroy(); } catch (e) {} peer = null; conn = null; }, 300);
@@ -126,8 +149,8 @@ function hangup(tell = true) {
   setState('not connected', false);
 }
 
-btn.onclick = () => (inCall || peer) ? hangup(true) : call();
-if (h.get('autocall') === '1') call();   // only for the PC's own test (test_call.py); a phone never has it in its link
+btn.onclick = () => { if (inCall || peer || wantCall) hangup(true); else { wantCall = true; call(); } };
+if (h.get('autocall') === '1') { wantCall = true; call(); }   // only for the PC's own test (test_call.py); a phone never has it in its link
 </script>
 </body>
 </html>
