@@ -202,18 +202,58 @@
   .bub.me { align-self: flex-end; background: var(--tint); border-bottom-right-radius: 6px; }
   .bub.claude { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 6px; }
   .bub .tm { display: block; text-align: right; font-size: 11px; color: var(--dim); margin-top: 2px; }
-  #chatForm { margin: 6px 12px calc(10px + env(safe-area-inset-bottom)); }
-  body.handsfree #chatForm { display: none !important; }
+  /* J-19 (14 Oct): Chat is the main page. Bottom bar like the Claude app: [+] [Message Chief] [Call / Send] */
+  #chatDock { padding: 4px 10px calc(10px + env(safe-area-inset-bottom)); }
+  #chatForm { display: flex; align-items: center; gap: 8px; }
+  #chatForm .field { flex: 1; min-width: 0; padding: 2px 4px 2px 16px; }
+  #chatForm .field input { height: 42px; }
+  .rbtn { width: 44px; height: 44px; border-radius: 50%; border: 0; flex-shrink: 0; display: grid; place-items: center; cursor: pointer;
+          background: var(--surface); color: var(--text); }
+  .rbtn svg { width: 22px; height: 22px; }
+  .rbtn.go { background: var(--primary); color: var(--onprimary); }
+  #quoteBar { display: flex; align-items: center; gap: 6px; margin: 0 2px 6px; padding: 6px 4px 6px 12px; border-left: 3px solid var(--primary);
+              background: var(--surface); border-radius: 10px; font-size: 13px; }
+  #quoteBar .qb { flex: 1; min-width: 0; }
+  #quoteWho { color: var(--primary); font-weight: 600; font-size: 12px; }
+  #quoteText { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #chatFlags { margin: 0 6px 6px; font-size: 12px; color: var(--primary); }
+  body.handsfree #chatForm .field, body.handsfree #plusBtn, body.handsfree #quoteBar { display: none !important; }
+  .bub { touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: transform .18s ease-out; }
+  .bub .qt, .askwrap .qt { border-left: 3px solid var(--primary); padding: 2px 8px; margin: 2px 0 6px; font-size: 13px; color: var(--dim);
+                           border-radius: 4px; background: rgba(0,0,0,.14); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btag { display: block; border: 0; background: none; padding: 0; margin: 0 0 3px; font-size: 11px; color: var(--primary); text-align: left; }
+  span.btag { color: var(--dim); }
+  .askwrap { align-self: flex-start; width: 92%; touch-action: pan-y; transition: transform .18s ease-out; }
+  .askwrap > .card { margin: 0; }
+  .askwrap .tm { display: block; text-align: right; font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .card.ask.done { opacity: .55; }
+  .card.ask .answ { color: var(--primary); margin-top: 6px; }
+  .mailprev { margin-top: 6px; font-size: 14px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
+  .mailprev .k { color: var(--dim); }
+  .heldc { align-self: stretch; max-width: none; border: 1px dashed var(--warn); background: none; color: var(--text); font-size: 14px; }
+  .sheet.full .panel { max-height: 100dvh; height: 100dvh; border-radius: 0; }
+  #act.full #actBody { flex: 1; }
+  input.subj { display: block; width: 100%; margin-top: 4px; height: 40px; background: var(--surface); color: var(--text); border: 1px solid var(--line);
+               border-radius: 10px; padding: 0 10px; font: inherit; outline: none; }
+  textarea.mailbody { min-height: 40dvh; resize: vertical; }
+  button.pick { text-align: left; color: var(--text); }
+  .titlebox { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .titlebox .title { flex: none; }
+  #barSub { font-size: 12px; color: var(--primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.callfull #rail { display: none; }
+  #backBtn { margin-left: -8px; }
+  .endsum .eh { font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin: 12px 0 4px; }
+  .endsum .el { font-size: 14px; padding: 3px 0; }
   #pair { margin: auto; text-align: center; color: var(--dim); max-width: 320px; padding: 24px; }
 </style>
 </head>
 <body>
 <nav id="rail" aria-label="Sections">
-  <button class="nav active" data-view="call" aria-label="Call"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button>
+  <button class="nav active" data-view="chat" aria-label="Chat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2zm2 4v2h12V8zm0 4v2h8v-2z" transform="translate(-1 0)"/></svg><span class="badge" id="b-chat"></span></button>
+  <button class="nav" data-view="call" aria-label="Call"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button>
   <button class="nav" data-view="brain" aria-label="Brain"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V8h14zM7 10h5v5H7z"/></svg><span class="badge" id="b-brain"></span></button>
   <button class="nav" data-view="approvals" aria-label="Approvals"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9z"/></svg><span class="badge" id="b-approvals"></span></button>
   <button class="nav" data-view="jobs" aria-label="Jobs"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4h4a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3V6a2 2 0 0 1 2-2zm0 3h4V6h-4zm-5 4v7h14v-7z"/></svg><span class="badge" id="b-jobs"></span></button>
-  <button class="nav" data-view="chat" aria-label="Chat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2zm2 4v2h12V8zm0 4v2h8v-2z" transform="translate(-1 0)"/></svg><span class="badge" id="b-chat"></span></button>
   <button class="nav" data-view="desks" aria-label="Desks"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg></button>
   <button class="nav" data-view="mis" aria-label="MIS"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></button>
   <button class="nav" data-view="connectors" aria-label="Connectors"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg></button>
@@ -221,14 +261,15 @@
 </nav>
 <div id="main">
 <div class="bar">
-  <span class="title" id="barTitle">Claude</span>
+  <button class="icon-btn hidden" id="backBtn" aria-label="Back to Chat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></button>
+  <div class="titlebox"><span class="title" id="barTitle">Chief</span><span id="barSub" class="hidden"></span></div>
   <button id="onCallChip" class="hidden">On call 0:00</button>
   <button id="updateChip" class="hidden">Update ready</button>
   <span id="pcDot" role="img" aria-label="PC not reachable" title="PC not reachable"></span>
   <button class="icon-btn" id="reload" aria-label="Reload the app"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/></svg></button>
 </div>
 
-<section class="view" id="v-call">
+<section class="view hidden" id="v-call">
   <div class="ustrip" id="ustrip" aria-label="Plan usage"></div>
   <div id="callTop">
     <div id="avatar" aria-hidden="true"></div>
@@ -274,12 +315,19 @@
   </div>
 </section>
 
-<section class="view hidden" id="v-chat">
+<section class="view" id="v-chat">
   <div class="thread" id="thread"><div class="empty">Loading...</div></div>
-  <form class="field" id="chatForm" autocomplete="off">
-    <input id="chatText" placeholder="Message Chief" enterkeyhint="send" aria-label="Message to Chief">
-    <button type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 20V4l19 8z"/></svg></button>
-  </form>
+  <div id="chatDock">
+    <div id="quoteBar" class="hidden"><div class="qb"><div id="quoteWho"></div><div id="quoteText"></div></div>
+      <button type="button" class="mini" id="quoteX" aria-label="Cancel the reply"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>
+    <div id="chatFlags" class="hidden"></div>
+    <form id="chatForm" autocomplete="off">
+      <button type="button" class="rbtn" id="plusBtn" aria-label="Add a photo, file, Brain item or job"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg></button>
+      <div class="field"><input id="chatText" placeholder="Message Chief" enterkeyhint="send" aria-label="Message to Chief"></div>
+      <button type="button" class="rbtn go" id="sendBtn" aria-label="Call Chief"></button>
+    </form>
+    <input type="file" id="filePick" class="hidden" aria-hidden="true" tabindex="-1">
+  </div>
 </section>
 
 <section class="view hidden" id="v-panel"><div class="scroll" id="panelBody"></div></section>
@@ -331,7 +379,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 const $ = id => document.getElementById(id);
 const statusEl = $('status'), hint = $('hint'), caption = $('caption'), log = $('log'), remote = $('remote');
 let peer = null, conn = null, stream = null, actx = null, wake = null, claudeState = 'idle', inCall = false, muted = false;
-let micLevel = null, remoteLevel = null, callStart = 0, currentView = 'call', speakEnd = 0;
+let micLevel = null, remoteLevel = null, callStart = 0, currentView = 'chat', speakEnd = 0;
 
 // ---------------------------------------------------------------- call screen
 function fmt(s) { return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); }
@@ -354,7 +402,10 @@ function showCallControls(on) {
   document.body.classList.toggle('oncall', on);
   $('call').classList.toggle('hidden', on);
   $('onCallChip').classList.toggle('hidden', !on || currentView === 'call');
+  paintFull();
 }
+// a call is full screen (no rail); the bar's back arrow goes to Chat while it carries on
+function paintFull() { document.body.classList.toggle('callfull', currentView === 'call' && (inCall || wantCall)); }
 function line(who, text) {
   log.querySelector('.empty')?.remove();
   const d = document.createElement('div'); d.className = 'line ' + who; d.textContent = text;
@@ -518,7 +569,7 @@ async function call() {
   if (stt !== 'google' && !useVad) {   // fallback: stream the microphone; Google mode: one mic user at a time, so none here
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-    } catch (e) { hint.textContent = 'Microphone blocked: allow it for this page.'; setState('ready'); wantCall = false; return; }
+    } catch (e) { hint.textContent = 'Microphone blocked: allow it for this page.'; setState('ready'); wantCall = false; paintFull(); return; }
     reportMic(stream, true);
     stream.getAudioTracks().forEach(t => { t.enabled = !muted; });
     micLevel = actx.createAnalyser(); micLevel.fftSize = 1024;
@@ -604,7 +655,7 @@ function dropped() {
   redialing = setInterval(() => {
     if (!wantCall || inCall || ++tries > 40) {
       clearInterval(redialing); redialing = null;
-      if (!inCall && wantCall) { hint.textContent = 'Could not call back. Tap Talk.'; wantCall = false; callStart = 0; setState('ready'); }
+      if (!inCall && wantCall) { hint.textContent = 'Could not call back. Tap Talk.'; wantCall = false; callStart = 0; setState('ready'); paintFull(); }
       return;
     }
     if (!peer && !document.hidden) call();
@@ -632,12 +683,15 @@ function hangup(tell = true, keepWanting = false) {
   }
 }
 
-$('call').onclick = () => {   // a new call starts clean: no transcript from earlier calls
+function startCall() {   // a new call starts clean: no transcript from earlier calls
+  show('call');
+  if (inCall || wantCall) return;   // already on one: just show it
   wantCall = true; muted = false; updateMute(); hideEndCard(); lastHeard = '';
   log.innerHTML = '<div class="empty">Nothing said yet.</div>'; caption.className = ''; caption.textContent = '';
-  call();
-};
-$('end').onclick = () => { hangup(true); paintHold(); showEndCard(); };
+  call(); paintFull();
+}
+$('call').onclick = startCall;
+$('end').onclick = () => { hangup(true); paintHold(); show('chat'); showEndCard(); };   // ending a call returns to Chat
 function updateMute() {
   $('mute').classList.toggle('on', muted);
   $('muteLabel').textContent = muted ? 'Unmute' : 'Mute';
@@ -762,8 +816,10 @@ $('v-call').addEventListener('click', e => {
 
 // ---------------------------------------------------------------- icon rail: Harsh's mods, read from the PC
 let side = null, sideConn = null, sideReady = null;
-const titles = { call: 'Claude', brain: 'Brain', approvals: 'Approvals', jobs: 'Jobs', chat: 'Chat', desks: 'Desks', mis: 'MIS', connectors: 'Connectors', settings: 'Settings' };
+const panelHooks = {};   // what -> one-time handler (the + sheet's Brain list, a tag's job details)
+const titles = { call: 'Claude', brain: 'Brain', approvals: 'Approvals', jobs: 'Jobs', chat: 'Chief', desks: 'Desks', mis: 'MIS', connectors: 'Connectors', settings: 'Settings' };
 $('onCallChip').onclick = () => show('call');
+$('backBtn').onclick = () => show('chat');
 document.querySelectorAll('.nav').forEach(b => b.onclick = () => show(b.dataset.view));
 
 function show(view) {
@@ -780,6 +836,9 @@ function show(view) {
   $('v-chat').classList.toggle('hidden', view !== 'chat');
   $('v-panel').classList.toggle('hidden', view === 'call' || view === 'settings' || view === 'chat');
   $('onCallChip').classList.toggle('hidden', !inCall || view === 'call');
+  $('backBtn').classList.toggle('hidden', view !== 'call');
+  $('barSub').classList.toggle('hidden', view !== 'chat' || !$('barSub').textContent);
+  paintFull();
   if (view === 'chat') loadChat(true);
   else if (view !== 'call' && view !== 'settings') loadPanel(view);
   try { paintChatDot(); } catch (e) {}   // before the chat code has run at start-up
@@ -817,7 +876,8 @@ const textCard = t => el('div', 'card', t);
 async function loadPanel(view) {
   const body = $('panelBody');
   body.innerHTML = ''; body.appendChild(el('div', 'empty', 'Loading...'));
-  try { await ask({ t: 'panel', what: view }); }
+  if (view === 'approvals') apprLoaded = false;
+  try { await ask({ t: 'panel', what: view }); if (view === 'approvals') await ask({ t: 'panel', what: 'held' }); }
   catch (e) { body.innerHTML = ''; body.appendChild(el('div', 'empty', 'Could not reach the PC. Is it on?')); }
 }
 
@@ -827,14 +887,16 @@ function onPanelData(m) {
   if (m.t === 'answered') { if (currentView === 'approvals') loadPanel('approvals'); return; }
   if (m.t !== 'panel') return;
   lastPong = Date.now(); paintDot();
+  if (panelHooks[m.what]) { const f = panelHooks[m.what]; delete panelHooks[m.what]; f(m.data); return; }
   if (m.what === 'chat') { if (currentView === 'chat' && m.data) renderChat(m.data); return; }
+  if (m.what === 'held') { heldData = m.data || []; if (currentView === 'approvals' && apprLoaded) renderApprovals(); return; }
   if (m.what !== currentView) return;
   const body = $('panelBody'), d = m.data;
   body.innerHTML = '';
   if (d == null) { body.appendChild(el('div', 'empty', 'Nothing to show.')); return; }
   if (m.what === 'brain') { brainData = d; renderBrain(); }
   else if (m.what === 'jobs') { jobsData = d; renderJobs(); }
-  else if (m.what === 'approvals') { apprData = d; renderApprovals();
+  else if (m.what === 'approvals') { apprData = d; apprLoaded = true; renderApprovals();
   } else if (m.what === 'desks') {
     body.appendChild(usageStrip(usageNow));
     renderDesks(body, d);
@@ -877,6 +939,7 @@ function sendFlags() { vsend({ t: 'flags', flags: opts, to: toRole }); }   // th
 function paintOpts() {
   document.querySelectorAll('#opts [data-opt]').forEach(b => { const on = !!opts[b.dataset.opt]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
   document.body.classList.toggle('handsfree', opts.handsfree);   // hands-free: no text box, keyboard or other typing
+  try { paintChatFlags(); } catch (e) {}   // before the chat code has run at start-up
 }
 document.querySelectorAll('#opts [data-opt]').forEach(b => b.onclick = () => {
   const k = b.dataset.opt; opts[k] = !opts[k];
@@ -919,15 +982,16 @@ $('shorterBtn').onclick = () => vsend({ t: 'redo', kind: 'shorter' });
 
 // end-of-call card: hand-offs made, asks waiting, the last things it understood (from the PC, after he hangs up)
 function hideEndCard() { $('endCard').classList.add('hidden'); caption.classList.remove('hidden'); }
+let endTok = null;
 async function showEndCard() {
-  const c = $('endCard');
-  c.innerHTML = ''; c.classList.remove('hidden'); caption.classList.add('hidden');
-  c.appendChild(el('div', 'sub', 'Getting the call summary...'));
+  const tok = endTok = {};
+  openSheet(b => b.appendChild(el('div', 'sub', 'Getting the call summary...')));
   await new Promise(r => setTimeout(r, 1500));
   const r = await act({ what: 'callsummary' });
-  if (c.classList.contains('hidden')) return;
-  c.innerHTML = '';
-  const close = el('button', 'pill', 'Close'); close.onclick = hideEndCard;
+  if (endTok !== tok || $('act').classList.contains('hidden')) return;   // closed meanwhile
+  let c = null;
+  openSheet(b => { c = el('div', 'endsum'); b.appendChild(c); });
+  const close = el('button', 'pill', 'Close'); close.onclick = closeSheet;
   const head = el('div', 'row'); head.appendChild(el('b', '', 'Call ended')); head.appendChild(close); c.appendChild(head);
   if (!r.ok || !r.data) { c.appendChild(el('div', 'sub', 'No summary: the PC did not answer.')); return; }
   const part = (title, xs, none) => {
@@ -939,7 +1003,7 @@ async function showEndCard() {
   part('Handed over', r.data.handoffs || [], 'Nothing handed over.');
   part('Waiting for your yes', r.data.approvals || [], 'Nothing waiting.');
   part('Last things it understood', r.data.heard || [], 'Nothing heard.');
-  if ((r.data.approvals || []).length) { const b = el('button', 'wide yes', 'Open Approvals'); b.onclick = () => { hideEndCard(); show('approvals'); }; c.appendChild(b); }
+  if ((r.data.approvals || []).length) { const b = el('button', 'wide yes', 'Open Approvals'); b.onclick = () => { closeSheet(); show('approvals'); }; c.appendChild(b); }
 }
 
 // ---------------------------------------------------------------- actions: request and answer over the sidebar link
@@ -1019,7 +1083,10 @@ function swipeable(card, { left, right, tap }) {
 }
 
 // bottom sheet for actions and notes
-function openSheet(build) { const b = $('actBody'); b.innerHTML = ''; b.appendChild(el('div', 'grab')).remove(); build(b); $('act').classList.remove('hidden'); }
+function openSheet(build, full = false) {
+  const b = $('actBody'); b.innerHTML = ''; b.appendChild(el('div', 'grab')).remove();
+  $('act').classList.toggle('full', full); build(b); $('act').classList.remove('hidden');
+}
 function closeSheet() { $('act').classList.add('hidden'); try { document.activeElement.blur(); } catch (e) {} }
 $('act').onclick = e => { if (e.target.id === 'act') closeSheet(); };
 function btnRow(defs, cls = 'btns wrap') {
@@ -1176,7 +1243,7 @@ function renderTriage(body) {
   body.appendChild(el('h4', '', 'Deadline'));
   const dr = btnRow([['today', 'Today'], ['tomorrow', 'Tomorrow'], ['fri', 'Fri'], ['mon', 'Mon']].map(([v, l]) => [l, () => { pick.due = v; chose(); }, pick.due === v ? 'on' : '']));
   dr.appendChild(datePick(/^\d{4}/.test(pick.due || '') ? dayLabel(pick.due) : 'Pick date', v => { pick.due = v; chose(); })); body.appendChild(dr);
-  const end = btnRow([['Drop', () => { brainDo(it, 'drop'); nextTri(); }], ['Hide', () => { brainDo(it, 'hide'); nextTri(); }],
+  const end = btnRow([['Done', () => { brainDo(it, 'done'); nextTri(); }], ['Drop', () => { brainDo(it, 'drop'); nextTri(); }], ['Hide', () => { brainDo(it, 'hide'); nextTri(); }],
                       ['Skip', nextTri], ['Save', save, 'yes']], 'btns');
   end.style.marginTop = '22px'; body.appendChild(end);
 }
@@ -1203,16 +1270,26 @@ function jobCard(j) {
   row.appendChild(el('b', '', `${j.id} · ${j.owner}`)); row.appendChild(el('span', 'tag st-' + j.status, j.status.replace(/-/g, ' ')));
   c.appendChild(row); c.appendChild(el('div', 'it', j.title));
   c.appendChild(el('div', 'sub', [j.age != null && 'updated ' + ageText(j.age), j.from && 'from ' + j.from, jobSent[j.id]].filter(Boolean).join(' · ')));
-  if (jobOpen[j.id]) {
-    const det = el('div', 'det');
-    if (j.brief) det.appendChild(el('div', '', 'Brief: ' + j.brief));
-    (j.notes || []).forEach(n => det.appendChild(el('div', 'sub', n)));
-    det.appendChild(el('div', j.result ? '' : 'sub', 'Result: ' + (j.result || 'none yet')));
-    c.appendChild(det);
-  }
+  if (jobOpen[j.id]) c.appendChild(jobDetails(j));
   return swipeable(c, { left: () => jobSheet(j), tap: () => { jobOpen[j.id] = !jobOpen[j.id]; renderJobs(); } });
 }
-function jobSheet(j) {
+function jobDetails(j) {
+  const det = el('div', 'det');
+  if (j.brief) det.appendChild(el('div', '', 'Brief: ' + j.brief));
+  (j.notes || []).forEach(n => det.appendChild(el('div', 'sub', n)));
+  det.appendChild(el('div', j.result ? '' : 'sub', 'Result: ' + (j.result || 'none yet')));
+  return det;
+}
+function jobDetail(id) {   // a chat tag tapped: that job's details (and Nudge / Cancel / Done while it is open)
+  openSheet(b => b.appendChild(el('div', 'empty', 'Loading ' + id + '...')));
+  panelHooks.jobs = d => {
+    const j = [...((d && d.open) || []), ...((d && d.closed) || [])].find(x => x.id === id);
+    if (j) jobSheet(j, true);
+    else openSheet(b => { b.appendChild(el('div', 'sheet-title', id)); b.appendChild(el('div', 'sub', 'Not open any more (closed before today).')); });
+  };
+  ask({ t: 'panel', what: 'jobs' }).catch(() => { delete panelHooks.jobs; closeSheet(); toast('PC not reachable', null, 3000); });
+}
+function jobSheet(j, full = false) {
   const rr = () => { if (currentView === 'jobs' && jobsData) renderJobs(); };
   const go = a => () => {
     closeSheet();
@@ -1224,39 +1301,58 @@ function jobSheet(j) {
   openSheet(b => {
     b.appendChild(el('div', 'sheet-title', `${j.id} · ${j.owner}: ${j.title}`));
     b.appendChild(el('div', 'sub', `${j.status.replace(/-/g, ' ')} · updated ${ageText(j.age)}`));
-    b.appendChild(btnRow([['Nudge', go('nudge')], ['Cancel', go('cancel')], ['Done', go('done'), 'yes']]));
+    if (full) b.appendChild(jobDetails(j));
+    if (!['sent', 'done'].includes(j.status)) b.appendChild(btnRow([['Nudge', go('nudge')], ['Cancel', go('cancel')], ['Done', go('done'), 'yes']]));
   });
 }
 
 // ---------------------------------------------------------------- Approvals: full draft, edit in place, write it properly
-let apprData = [];
+let apprData = [], heldData = [], apprLoaded = false;
 const drafts = {}, apprGone = {};
 function renderApprovals() {
   const body = $('panelBody');
   body.innerHTML = '';
-  const list = (apprData || []).filter(a => !apprGone[a.n + '|' + a.text]);
-  $('b-approvals').textContent = list.length ? String(list.length) : '';
-  if (!list.length) { body.appendChild(el('div', 'empty', 'Nothing is waiting for your yes.')); return; }
-  body.appendChild(section(`Waiting for your answer (${list.length})`, list, apprCard));
-  body.appendChild(el('div', 'refresh', 'Tap the text to edit it. Live-system changes still need Approve at the laptop.'));
+  const list = (apprData || []).filter(a => !apprGone[askKey(a)]), held = heldData || [];
+  $('b-approvals').textContent = list.length + held.length ? String(list.length + held.length) : '';
+  if (!list.length && !held.length) { body.appendChild(el('div', 'empty', 'Nothing is waiting for your yes.')); return; }
+  if (list.length) {
+    body.appendChild(section(`Waiting for your answer (${list.length})`, list, a => askCard(a)));
+    body.appendChild(el('div', 'refresh', 'Tap the text to edit it. Live-system changes still need Approve at the laptop.'));
+  }
+  // a desk's held live-system change: shown only, approved in that desk at the laptop (no button here)
+  if (held.length) body.appendChild(section(`Waiting at the laptop (${held.length})`, held, h => el('div', 'card', `Waiting at the laptop in ${h.title}: ${h.summary}`)));
 }
-function apprCard(a) {
-  const c = el('div', 'card'), key = a.n + '|' + a.text;
-  c.appendChild(el('div', 'sub', [a.n != null ? 'Ask ' + a.n : '', a.desk, a.job, a.at].filter(Boolean).join(' · ')));
+// one ask (wa.py ask) as a card, the same in the Chat tab and in Approvals: Yes / No, the text editable in place with
+// Write it properly; a mail draft shows names, subject and two lines, and opens full screen. Answered cards grey out.
+const askKey = a => a.id || (a.n + '|' + a.text);
+function askCard(a, tag = '') {
+  const key = askKey(a), gone = apprGone[key], open = a.open !== false && !gone;
+  const c = el('div', 'card ask' + (open ? '' : ' done'));
+  const headText = [a.n != null ? 'Ask ' + a.n : '', tag || [a.desk, a.job].filter(Boolean).join(' · '), a.at].filter(Boolean).join(' · ');
+  if (a.job) { const t = el('button', 'btag', headText); t.onclick = () => jobDetail(a.job); c.appendChild(t); }
+  else c.appendChild(el('div', 'sub', headText));
+  if (a.quote) c.appendChild(el('div', 'qt', a.quote));
+  if (a.mail) mailPreview(c, a);
   let ta = null;
-  if (a.editable && a.n != null) {
+  if (!a.mail && open && a.editable && a.n != null) {
     ta = el('textarea', 'draft'); ta.value = drafts[key] != null ? drafts[key] : a.text; ta.setAttribute('aria-label', 'Draft text, tap to edit');
     const grow = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
     ta.oninput = () => { drafts[key] = ta.value; grow(); paint(); };
     c.appendChild(ta); requestAnimationFrame(grow);
-  } else {
+  } else if (!a.mail) {
     c.appendChild(el('div', 'drafttext', a.text));
-    if (!a.editable) c.appendChild(el('div', 'sub', 'Has an address or phone number: edit this one at the laptop.'));
+    if (open && !a.editable) c.appendChild(el('div', 'sub', 'Has an address or phone number: edit this one at the laptop.'));
   }
+  if (!open) { c.appendChild(el('div', 'answ', 'Answered: ' + (gone || a.answer || 'answered'))); return c; }
   const btns = el('div', 'btns wrap'); c.appendChild(btns);
   const changed = () => ta && ta.value.trim() !== a.text.trim();
   function paint() {
     btns.innerHTML = '';
+    if (a.mail) {
+      btns.appendChild(btnRow([['Not now', () => answer(a, 'no')], ['Open mail', () => mailSheet(a), 'yes']], 'btns wrap'));
+      btns.firstChild.style.margin = '0'; btns.firstChild.style.flex = '1';
+      return;
+    }
     if (!changed()) {
       btns.appendChild(btnRow([['No', () => answer(a, 'no')], ['Yes', () => answer(a, 'yes'), 'yes']], 'btns wrap'));
       btns.firstChild.style.margin = '0'; btns.firstChild.style.flex = '1';
@@ -1276,12 +1372,76 @@ function apprCard(a) {
   paint();
   return c;
 }
+function mailPreview(c, a) {   // names only (the PC never sends an address), subject, the first two lines
+  const m = a.mail, box = el('div', 'mailprev');
+  if (m.missing) { box.appendChild(el('div', 'sub', 'The mail draft file is not on the PC any more.')); c.appendChild(box); return; }
+  const kv = (k, v) => { const d = el('div', ''); d.appendChild(el('span', 'k', k + ' ')); d.appendChild(document.createTextNode(v)); box.appendChild(d); };
+  kv('To', (m.to || []).join(', ') || '-');
+  if ((m.cc || []).length) kv('Cc', m.cc.join(', '));
+  const sj = el('b', '', m.subject || '(no subject)'); box.appendChild(sj);
+  (m.lines || []).forEach(l => box.appendChild(el('div', 'sub', l)));
+  if ((m.attachments || []).length) kv('Files', m.attachments.join(', '));
+  if (a.text) box.appendChild(el('div', 'sub', a.text));
+  c.appendChild(box);
+  box.onclick = () => { if (a.open !== false && !apprGone[askKey(a)]) mailSheet(a); };
+}
+function mailSheet(a) {   // the whole mail, full screen: subject and body editable in place
+  const m = a.mail, key = askKey(a);
+  if (!m || m.missing) return;
+  openSheet(b => {
+    const top = el('div', 'row');
+    top.appendChild(el('div', 'sub', ['Mail draft', a.n != null ? 'Ask ' + a.n : '', a.desk, a.job].filter(Boolean).join(' · ')));
+    const x = el('button', 'pill', 'Close'); x.onclick = closeSheet; top.appendChild(x); b.appendChild(top);
+    const kv = (k, v) => { const d = el('div', 'sub'); d.textContent = k + ': ' + v; b.appendChild(d); };
+    kv('To', (m.to || []).join(', ') || '-');
+    if ((m.cc || []).length) kv('Cc', m.cc.join(', '));
+    const was = drafts[key + '|mail'] || { subject: m.subject, body: m.body };
+    let subj = null, body = null;
+    b.appendChild(el('h4', '', 'Subject'));
+    if (m.editable) { subj = el('input', 'subj'); subj.value = was.subject; subj.setAttribute('aria-label', 'Subject'); b.appendChild(subj); }
+    else b.appendChild(el('div', 'drafttext', m.subject));
+    b.appendChild(el('h4', '', 'Body'));
+    if (m.editable) {
+      body = el('textarea', 'note mailbody'); body.value = was.body; body.setAttribute('aria-label', 'Mail body'); b.appendChild(body);
+      const keep = () => { drafts[key + '|mail'] = { subject: subj.value, body: body.value }; };
+      subj.oninput = keep; body.oninput = keep;
+    } else {
+      b.appendChild(el('div', 'drafttext', m.body));
+      b.appendChild(el('div', 'sub', 'Has an address or phone number: edit this one at the laptop. Send approves it as it is.'));
+    }
+    if ((m.attachments || []).length) { b.appendChild(el('h4', '', 'Files')); m.attachments.forEach(f => b.appendChild(el('div', 'sub', f))); }
+    const text = () => `Subject: ${subj.value.trim()}\n\n${body.value.trim()}`;
+    const row = el('div', 'btns wrap');
+    if (m.editable) {
+      const pol = el('button', '', 'Write it properly');
+      pol.onclick = async () => {
+        pol.disabled = true; pol.textContent = 'Writing...';
+        const r = await act({ what: 'polish', n: a.n, text: text() });
+        pol.disabled = false; pol.textContent = 'Write it properly';
+        if (!r.ok || !r.text) { toast(r.msg || 'Could not write it.', null, 4500); return; }
+        const mm = /^\s*Subject:\s*(.*)\n+([\s\S]*)$/.exec(r.text);
+        if (mm) { subj.value = mm[1].trim(); body.value = mm[2].trim(); } else body.value = r.text.trim();
+        body.oninput(); toast('Check it, then Send.', null, 3500);
+      };
+      row.appendChild(pol);
+    }
+    const no = el('button', '', 'Not now'); no.onclick = () => { closeSheet(); answer(a, 'no'); };
+    const send = el('button', 'yes', 'Send');
+    send.onclick = () => { closeSheet(); if (m.editable) answer(a, 'edited', text()); else answer(a, 'yes'); };
+    row.appendChild(no); row.appendChild(send); b.appendChild(row);
+  }, true);
+}
 function answer(a, verb, text = '') {
-  const key = a.n + '|' + a.text, rr = () => { if (currentView === 'approvals') renderApprovals(); };
-  later(verb === 'edited' ? `Ask ${a.n}: send edited text` : `Ask ${a.n}: ${verb}`, { what: 'approve', n: a.n, action: verb, text }, {
-    apply: () => { apprGone[key] = 1; rr(); },
+  const key = askKey(a), mail = !!a.mail;
+  const label = { yes: mail ? 'Send' : 'Yes', no: mail ? 'Not now' : 'No', edited: mail ? 'Send this text' : 'Yes, with my edits' }[verb];
+  const rr = () => { if (currentView === 'approvals') renderApprovals(); else if (currentView === 'chat' && lastChat) renderChat(lastChat, true); };
+  later(verb === 'edited' ? `Ask ${a.n}: send edited text` : `Ask ${a.n}: ${label}`, { what: 'approve', n: a.n, id: a.id || '', action: verb, text }, {
+    apply: () => { apprGone[key] = label; rr(); },
     revert: () => { delete apprGone[key]; rr(); },
-    done: () => { delete drafts[key]; setTimeout(() => { if (currentView === 'approvals') loadPanel('approvals'); }, 1500); },
+    done: () => {
+      delete drafts[key]; delete drafts[key + '|mail'];
+      setTimeout(() => { if (currentView === 'approvals') loadPanel('approvals'); else if (currentView === 'chat') { chatSig = ''; loadChat(false); } }, 1500);
+    },
   });
 }
 
@@ -1336,32 +1496,221 @@ async function loadChat(first) {
   catch (e) { if (first) { th.innerHTML = ''; th.appendChild(el('div', 'empty', 'Could not reach the PC. Is it on?')); } }
   chatTimer = setTimeout(() => { if (!document.hidden) loadChat(false); else chatTimer = setTimeout(() => loadChat(false), 4000); }, 4000);
 }
-function renderChat(d) {
+// J-19 (14 Oct): every message has an id; swipe one right (or long-press -> Reply) to answer it, like WhatsApp. Claude's
+// bubbles carry a tag "<desk> · <job> · <live status>" (tap: the job's details), asks are cards with Yes / No, a held
+// live-system change shows read-only, and lines said on a call land here too (marked "call").
+let lastChat = null, replyTo = null;
+function renderChat(d, force = false) {
+  lastChat = d;
+  const sub = $('barSub');
+  sub.textContent = d.working ? 'Working: ' + d.working : '';
+  sub.classList.toggle('hidden', currentView !== 'chat' || !d.working);
   const th = $('thread');
-  const sig = JSON.stringify(d.msgs || []);
-  if (sig === chatSig && th.children.length) return;   // nothing new: keep his scroll place
+  const sig = JSON.stringify([d.msgs || [], d.held || []]);
+  if (!force && sig === chatSig && th.children.length) return;   // nothing new: keep his scroll place
+  if (!force && th.contains(document.activeElement) && th.children.length) return;   // he is editing a draft: next round
   chatSig = sig;
   const atEnd = th.scrollHeight - th.scrollTop - th.clientHeight < 60;
   th.innerHTML = '';
   if (!d.ok) th.appendChild(el('div', 'refresh', 'Could not read the whole thread on the PC; showing what the app has.'));
-  if (!(d.msgs || []).length) th.appendChild(el('div', 'empty', 'No messages yet.'));
-  (d.msgs || []).forEach(m => {
-    const b = el('div', 'bub ' + m.who, m.text);
-    b.appendChild(el('span', 'tm', m.time + (m.app ? ' · from the app' : '')));
-    th.appendChild(b);
-  });
+  if (!(d.msgs || []).length && !(d.held || []).length) th.appendChild(el('div', 'empty', 'No messages yet.'));
+  (d.msgs || []).forEach(m => th.appendChild(m.ask ? askBubble(m) : bubble(m)));
+  (d.held || []).forEach(x => th.appendChild(el('div', 'bub heldc', `Approve at the laptop: ${x.title} - ${x.summary}`)));
   if (atEnd || !th.dataset.seen) { th.scrollTop = th.scrollHeight; th.dataset.seen = '1'; }
 }
-$('chatForm').onsubmit = async e => {
-  e.preventDefault();
+function metaLine(m) { return [m.via === 'call' ? 'call' : '', m.time, m.app ? 'from the app' : ''].filter(Boolean).join(' · '); }
+function bubble(m) {
+  const b = el('div', 'bub ' + m.who);
+  if (m.tag) {
+    const t = el(m.job ? 'button' : 'span', 'btag', m.tag);
+    if (m.job) t.onclick = () => jobDetail(m.job);
+    b.appendChild(t);
+  }
+  if (m.quote) b.appendChild(el('div', 'qt', m.quote));
+  b.appendChild(document.createTextNode(m.text));
+  b.appendChild(el('span', 'tm', metaLine(m)));
+  replyGestures(b, m);
+  return b;
+}
+function askBubble(m) {
+  const w = el('div', 'askwrap');
+  w.appendChild(askCard({ ...m.ask, id: m.id, text: m.text, quote: m.quote }, m.tag));
+  w.appendChild(el('span', 'tm', metaLine(m)));
+  replyGestures(w, m);
+  return w;
+}
+// swipe right past 60 px = Reply; hold still 0.55 s = the message menu; vertical scrolling still works
+function replyGestures(b, m) {
+  let x0 = 0, y0 = 0, pid = null, dx = 0, drag = false, timer = null;
+  b.addEventListener('pointerdown', e => {
+    if (e.target.closest('button, textarea, input, select, a')) return;
+    pid = e.pointerId; x0 = e.clientX; y0 = e.clientY; dx = 0; drag = false;
+    clearTimeout(timer); timer = setTimeout(() => { if (pid !== null && !drag) { pid = null; msgMenu(m); } }, 550);
+  });
+  b.addEventListener('pointermove', e => {
+    if (e.pointerId !== pid) return;
+    const mx = e.clientX - x0, my = e.clientY - y0;
+    if (!drag) {
+      if (Math.abs(mx) > 8 || Math.abs(my) > 8) clearTimeout(timer);
+      if (mx > 10 && mx > Math.abs(my) * 1.3) { drag = true; b.style.transition = 'none'; try { b.setPointerCapture(pid); } catch (x) {} }
+      else if (Math.abs(my) > 10 || mx < -10) pid = null;
+      return;
+    }
+    dx = Math.max(0, Math.min(mx, 90)); b.style.transform = `translateX(${dx}px)`;
+  });
+  const end = e => {
+    if (e.pointerId !== pid) { clearTimeout(timer); return; }
+    clearTimeout(timer); pid = null; b.style.transition = ''; b.style.transform = '';
+    if (drag && dx > 60) setReply(m);
+    drag = false;
+  };
+  b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end);
+  b.addEventListener('contextmenu', e => e.preventDefault());   // the long-press menu is ours
+}
+function msgMenu(m) {
+  openSheet(b => {
+    b.appendChild(el('div', 'sheet-title', short(m.text, 160)));
+    b.appendChild(btnRow([['Reply', () => { closeSheet(); setReply(m); }, 'yes'],
+                          ['Copy', () => { closeSheet(); try { navigator.clipboard.writeText(m.text); toast('Copied', null, 1500); } catch (e) {} }]]));
+  });
+}
+function setReply(m) {
+  replyTo = { id: m.id, who: m.who };
+  $('quoteWho').textContent = m.who === 'me' ? 'Replying to yourself' : 'Replying to ' + (m.tag ? m.tag.split(' · ')[0] : 'Chief');
+  $('quoteText').textContent = (String(m.text).split('\n').find(x => x.trim()) || '').slice(0, 100);
+  $('quoteBar').classList.remove('hidden');
+  $('chatText').focus();
+}
+function clearReply() { replyTo = null; $('quoteBar').classList.add('hidden'); }
+$('quoteX').onclick = clearReply;
+
+// the round button: Call when the box is empty, Send when there is text
+const ICON_PHONE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>';
+const ICON_SEND = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20V4l19 8z"/></svg>';
+let sendMode = '';
+function paintSend() {
+  const mode = $('chatText').value.trim() ? 'send' : 'call';
+  if (mode === sendMode) return;
+  sendMode = mode;
+  $('sendBtn').innerHTML = mode === 'send' ? ICON_SEND : ICON_PHONE;
+  $('sendBtn').setAttribute('aria-label', mode === 'send' ? 'Send' : (inCall ? 'Back to the call' : 'Call Chief'));
+}
+$('chatText').addEventListener('input', paintSend);
+paintSend();
+$('sendBtn').onclick = () => { if ($('chatText').value.trim()) sendChat(); else startCall(); };
+$('chatForm').onsubmit = e => { e.preventDefault(); sendChat(); };   // Enter sends; it never starts a call
+async function sendChat() {
   const t = $('chatText').value.trim();
   if (!t) return;
-  $('chatText').value = '';
-  const th = $('thread'); const b = el('div', 'bub me', t); b.appendChild(el('span', 'tm', 'sending...')); th.appendChild(b); th.scrollTop = th.scrollHeight;
-  const r = await act({ what: 'chat', text: t });
-  if (!r.ok) { b.lastChild.textContent = 'not sent: ' + (r.msg || 'error'); $('chatText').value = t; return; }
+  const rt = replyTo;
+  $('chatText').value = ''; paintSend(); clearReply();
+  const th = $('thread'); const b = el('div', 'bub me');
+  if (rt) b.appendChild(el('div', 'qt', $('quoteText').textContent));
+  b.appendChild(document.createTextNode(t)); b.appendChild(el('span', 'tm', 'sending...')); th.appendChild(b); th.scrollTop = th.scrollHeight;
+  const r = await act({ what: 'chat', text: t, reply_to: rt ? rt.id : '', flags: { plan: opts.plan, quick: opts.quick, short: opts.short } });
+  if (!r.ok) { b.lastChild.textContent = 'not sent: ' + (r.msg || 'error'); $('chatText').value = t; paintSend(); return; }
   chatSig = ''; loadChat(false);
-};
+}
+
+// the switches that go with typed messages (the call's own Plan first / Quick / Short), shown above the box when on
+const CHAT_OPTS = [['plan', 'Plan first'], ['quick', 'Quick answer'], ['short', 'Short replies']];
+function paintChatFlags() {
+  const on = CHAT_OPTS.filter(([k]) => opts[k]).map(([, l]) => l);
+  $('chatFlags').textContent = on.join(' · ');
+  $('chatFlags').classList.toggle('hidden', !on.length);
+}
+$('chatFlags').onclick = () => plusSheet();
+paintChatFlags();
+
+// the + sheet: a photo or file, a Brain item, a new job, and the switches
+$('plusBtn').onclick = () => plusSheet();
+function plusSheet() {
+  openSheet(b => {
+    b.appendChild(el('div', 'sheet-title', 'Add'));
+    b.appendChild(btnRow([['Photo or screenshot', () => pickFile('image/*')], ['File', () => pickFile('')]]));
+    b.appendChild(btnRow([['Brain item', brainPick], ['New job', newJobSheet]]));
+    b.appendChild(el('h4', '', 'How Chief should answer'));
+    const boxes = {};
+    CHAT_OPTS.forEach(([k, label]) => {
+      const row = el('label', 'row switchrow'); row.appendChild(el('span', '', label));
+      const sw = el('input', 'switch'); sw.type = 'checkbox'; sw.setAttribute('role', 'switch'); sw.checked = !!opts[k];
+      sw.onchange = () => {
+        opts[k] = sw.checked;
+        if (k === 'plan' && opts.plan) opts.quick = false;
+        if (k === 'quick' && opts.quick) opts.plan = false;
+        Object.entries(boxes).forEach(([kk, x]) => { x.checked = !!opts[kk]; });
+        saveOpts(); paintOpts(); sendFlags();
+      };
+      boxes[k] = sw; row.appendChild(sw); b.appendChild(row);
+    });
+    b.appendChild(el('div', 'refresh', 'The same switches as on a call. A file goes with the text in the box as its caption.'));
+  });
+}
+function pickFile(accept) {
+  closeSheet();
+  const f = $('filePick'); f.value = ''; if (accept) f.setAttribute('accept', accept); else f.removeAttribute('accept');
+  f.click();
+}
+$('filePick').onchange = () => { const f = $('filePick').files[0]; if (f) sendFile(f); };
+function b64(buf) {
+  const a = new Uint8Array(buf); let s = '';
+  for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+const MAX_FILE = 10 * 1024 * 1024, CHUNK = 192 * 1024;
+async function sendFile(f) {   // in pieces over the sidebar link; the PC saves it and tells Chief where it is
+  if (!f.size) { toast('That file is empty.', null, 3000); return; }
+  if (f.size > MAX_FILE) { toast('Files up to 10 MB only.', null, 3500); return; }
+  const caption = $('chatText').value.trim(), rt = replyTo;
+  $('chatText').value = ''; paintSend(); clearReply();
+  const th = $('thread'), b = el('div', 'bub me', '(file) ' + f.name + (caption ? '\n' + caption : '')), tm = el('span', 'tm', 'sending 0%');
+  b.appendChild(tm); th.appendChild(b); th.scrollTop = th.scrollHeight;
+  const total = Math.ceil(f.size / CHUNK), uid = (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)).toLowerCase();
+  for (let i = 0; i < total; i++) {
+    const data = b64(await f.slice(i * CHUNK, (i + 1) * CHUNK).arrayBuffer());
+    const last = i === total - 1;
+    const r = await act({ what: 'upload', uid, seq: i, total, size: f.size, name: f.name, data, ...(last ? { caption, reply_to: rt ? rt.id : '' } : {}) });
+    if (!r.ok) { tm.textContent = 'not sent: ' + (r.msg || 'error'); if (caption && !$('chatText').value) { $('chatText').value = caption; paintSend(); } return; }
+    tm.textContent = r.done ? 'sent' : `sending ${Math.round((i + 1) / total * 100)}%`;
+  }
+  chatSig = ''; loadChat(false);
+}
+function brainPick() {   // a Brain item -> "About: <item>" in the box, for him to finish
+  openSheet(b => { b.appendChild(el('div', 'sheet-title', 'Pick a Brain item')); b.appendChild(el('div', 'empty', 'Loading...')); });
+  panelHooks.brain = d => {
+    if (d) brainData = d;
+    const rank = i => i.f.includes('overdue') ? 0 : i.f.includes('today') ? 1 : i.f.includes('needs') ? 2 : 3;
+    const items = brainItems().sort((x, y) => rank(x) - rank(y)).slice(0, 80);
+    openSheet(b => {
+      b.appendChild(el('div', 'sheet-title', 'Pick a Brain item'));
+      if (!items.length) b.appendChild(el('div', 'empty', 'Nothing in Brain.'));
+      items.forEach(it => {
+        const c = el('button', 'card linkish pick', it.text);
+        c.onclick = () => { closeSheet(); $('chatText').value = `About: ${it.text} - `; paintSend(); $('chatText').focus(); };
+        b.appendChild(c);
+      });
+    });
+  };
+  ask({ t: 'panel', what: 'brain' }).catch(() => { delete panelHooks.brain; closeSheet(); toast('PC not reachable', null, 3000); });
+}
+function newJobSheet() {   // a head and what to do -> Chief logs and routes it
+  let head = '';
+  openSheet(b => {
+    b.appendChild(el('div', 'sheet-title', 'New job'));
+    b.appendChild(el('h4', '', 'For'));
+    const row = btnRow(GIVE.map(r => [r, () => { head = r; [...row.children].forEach(x => x.classList.toggle('on', x.textContent === r)); }]));
+    b.appendChild(row);
+    const ta = el('textarea', 'note'); ta.rows = 3; ta.placeholder = 'What to do (the keyboard mic works)'; b.appendChild(ta);
+    const send = el('button', 'wide yes', 'Send to Chief');
+    send.onclick = () => {
+      const t = ta.value.trim();
+      if (!head) { toast('Pick a head first.', null, 2500); return; }
+      if (!t) { ta.focus(); return; }
+      closeSheet(); later(`Job for ${head}: ${short(t, 30)}`, { what: 'newjob', head, text: t });
+    };
+    b.appendChild(send);
+  });
+}
 
 // ---------------------------------------------------------------- PC reachable dot and rail badges (the sidebar link's heartbeat)
 let lastPong = 0;
@@ -1374,7 +1723,7 @@ async function refreshCounts() {
   const r = await act({ what: 'counts' });
   if (!r.ok || !r.data) return;
   const set = (id, n) => { $(id).textContent = n ? String(n) : ''; };
-  set('b-brain', r.data.overdue); set('b-approvals', r.data.approvals); set('b-jobs', r.data.jobs);
+  set('b-brain', r.data.overdue); set('b-approvals', (r.data.approvals || 0) + (r.data.held || 0)); set('b-jobs', r.data.jobs);
   paintModel(r.data.model); paintUsage(r.data.usage);
   chatLast = r.data.chat_last || ''; paintChatDot();
 }
@@ -1403,7 +1752,8 @@ async function checkUpdate() {
 checkUpdate(); setInterval(checkUpdate, 120000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 
-if (h.get('autocall') === '1') { wantCall = true; call(); }   // only for the PC's own test (test_call.py); a phone never has it in its link
+if (h.get('autocall') === '1') startCall();   // only for the PC's own test (test_call.py); a phone never has it in its link
+else show('chat');   // Chat is the main page (J-19, 14 Oct)
 </script>
 </body>
 </html>
