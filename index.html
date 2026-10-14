@@ -196,7 +196,7 @@
             font-variant-numeric: tabular-nums; }
   .ustrip b { font-weight: 600; } .ustrip .ok { color: var(--good); } .ustrip .amber { color: var(--warn); } .ustrip .red { color: var(--endbg); }
   #v-panel .ustrip { justify-content: flex-start; padding: 8px 4px 0; }
-  /* Chat tab: the WhatsApp chat "Claude" with Chief */
+  /* Chat tab: the app thread with Chief (the WhatsApp group closed 14 Oct 2026) */
   #v-chat .thread { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 14px; display: flex; flex-direction: column; gap: 8px; }
   .bub { max-width: 84%; padding: 7px 12px 5px; border-radius: 16px; font-size: 15px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
   .bub.me { align-self: flex-end; background: var(--tint); border-bottom-right-radius: 6px; }
@@ -213,7 +213,7 @@
   <button class="nav" data-view="brain" aria-label="Brain"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V8h14zM7 10h5v5H7z"/></svg><span class="badge" id="b-brain"></span></button>
   <button class="nav" data-view="approvals" aria-label="Approvals"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9z"/></svg><span class="badge" id="b-approvals"></span></button>
   <button class="nav" data-view="jobs" aria-label="Jobs"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4h4a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3V6a2 2 0 0 1 2-2zm0 3h4V6h-4zm-5 4v7h14v-7z"/></svg><span class="badge" id="b-jobs"></span></button>
-  <button class="nav" data-view="chat" aria-label="Chat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2zm2 4v2h12V8zm0 4v2h8v-2z" transform="translate(-1 0)"/></svg></button>
+  <button class="nav" data-view="chat" aria-label="Chat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2zm2 4v2h12V8zm0 4v2h8v-2z" transform="translate(-1 0)"/></svg><span class="badge" id="b-chat"></span></button>
   <button class="nav" data-view="desks" aria-label="Desks"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg></button>
   <button class="nav" data-view="mis" aria-label="MIS"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></button>
   <button class="nav" data-view="connectors" aria-label="Connectors"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg></button>
@@ -782,6 +782,7 @@ function show(view) {
   $('onCallChip').classList.toggle('hidden', !inCall || view === 'call');
   if (view === 'chat') loadChat(true);
   else if (view !== 'call' && view !== 'settings') loadPanel(view);
+  try { paintChatDot(); } catch (e) {}   // before the chat code has run at start-up
 }
 
 // its own quiet link to the PC, so the sidebar works without a call
@@ -1318,8 +1319,14 @@ async function pickModel(v) {
 $('modelChip').onchange = () => pickModel($('modelChip').value);
 $('modelSet').onchange = () => pickModel($('modelSet').value);
 
-// ---------------------------------------------------------------- Chat tab: the WhatsApp chat "Claude", read on the PC; typing goes to Chief
-let chatTimer = null, chatSig = '';
+// ---------------------------------------------------------------- Chat tab: the thread with Chief, kept on the PC; typing goes to Chief
+let chatTimer = null, chatSig = '', chatLast = '';
+// the rail's dot: Claude wrote since he last had the Chat tab open (kept per phone)
+function chatSeen() { try { return localStorage.getItem('chat_seen') || ''; } catch (e) { return ''; } }
+function paintChatDot() {
+  if (currentView === 'chat' && chatLast) { try { localStorage.setItem('chat_seen', chatLast); } catch (e) {} }
+  $('b-chat').textContent = chatLast && chatLast > chatSeen() && currentView !== 'chat' ? 'new' : '';
+}
 async function loadChat(first) {
   clearTimeout(chatTimer);
   if (currentView !== 'chat') return;
@@ -1336,7 +1343,7 @@ function renderChat(d) {
   chatSig = sig;
   const atEnd = th.scrollHeight - th.scrollTop - th.clientHeight < 60;
   th.innerHTML = '';
-  if (!d.ok) th.appendChild(el('div', 'refresh', 'WhatsApp is not reachable on the PC; showing what the app has.'));
+  if (!d.ok) th.appendChild(el('div', 'refresh', 'Could not read the whole thread on the PC; showing what the app has.'));
   if (!(d.msgs || []).length) th.appendChild(el('div', 'empty', 'No messages yet.'));
   (d.msgs || []).forEach(m => {
     const b = el('div', 'bub ' + m.who, m.text);
@@ -1369,6 +1376,7 @@ async function refreshCounts() {
   const set = (id, n) => { $(id).textContent = n ? String(n) : ''; };
   set('b-brain', r.data.overdue); set('b-approvals', r.data.approvals); set('b-jobs', r.data.jobs);
   paintModel(r.data.model); paintUsage(r.data.usage);
+  chatLast = r.data.chat_last || ''; paintChatDot();
 }
 setInterval(beat, 20000); setInterval(paintDot, 5000); setInterval(refreshCounts, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
