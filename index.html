@@ -1494,7 +1494,7 @@ async function loadChat(first) {
   if (first && !th.children.length) th.appendChild(el('div', 'empty', 'Loading...'));
   try { await ask({ t: 'panel', what: 'chat' }); }
   catch (e) { if (first) { th.innerHTML = ''; th.appendChild(el('div', 'empty', 'Could not reach the PC. Is it on?')); } }
-  chatTimer = setTimeout(() => { if (!document.hidden) loadChat(false); else chatTimer = setTimeout(() => loadChat(false), 4000); }, 4000);
+  chatTimer = setTimeout(() => { if (!document.hidden) loadChat(false); else chatTimer = setTimeout(() => loadChat(false), 4000); }, 2000);   // 2 s while open (J-43)
 }
 // J-19 (14 Oct): every message has an id; swipe one right (or long-press -> Reply) to answer it, like WhatsApp. Claude's
 // bubbles carry a tag "<desk> · <job> · <live status>" (tap: the job's details), asks are cards with Yes / No, a held
@@ -1727,7 +1727,7 @@ async function refreshCounts() {
   paintModel(r.data.model); paintUsage(r.data.usage);
   chatLast = r.data.chat_last || ''; paintChatDot();
 }
-setInterval(beat, 20000); setInterval(paintDot, 5000); setInterval(refreshCounts, 60000);
+setInterval(beat, 20000); setInterval(paintDot, 5000); setInterval(refreshCounts, 20000);   // badges and the Chat dot every 20 s (was 60 s, J-43)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
 setTimeout(() => { beat(); refreshCounts(); }, 800);
 
