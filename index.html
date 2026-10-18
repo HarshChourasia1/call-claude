@@ -245,6 +245,21 @@
   .endsum .eh { font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin: 12px 0 4px; }
   .endsum .el { font-size: 14px; padding: 3px 0; }
   #pair { margin: auto; text-align: center; color: var(--dim); max-width: 320px; padding: 24px; }
+  /* J-89 (19 Oct): one main screen. "Waiting on you" bar above the chat; files open on the phone; Settings holds the laptop status */
+  #waitBar { display: flex; align-items: center; gap: 8px; margin: 2px 12px 4px; padding: 9px 12px; border: 0; border-radius: 12px;
+             background: var(--surface); color: var(--dim); font-size: 14px; text-align: left; cursor: pointer; flex-shrink: 0; }
+  #waitBar.need { background: var(--tint); color: var(--primary); }
+  #waitBar .wt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #waitBar svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .flash { animation: flash 1.6s ease-out; }
+  @keyframes flash { 0%, 40% { box-shadow: 0 0 0 2px var(--primary); } 100% { box-shadow: 0 0 0 2px transparent; } }
+  .bub .fbtn { display: inline-flex; margin: 6px 0 2px; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line);
+               background: var(--bg); color: var(--primary); font-size: 13px; align-items: center; }
+  .fileprev { display: block; max-width: 100%; max-height: 55dvh; margin: 10px auto; border-radius: 10px; }
+  a.btnlink { flex: 1; height: 40px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+              display: grid; place-items: center; text-decoration: none; }
+  a.btnlink.yes { background: var(--primary); color: var(--onprimary); border: 0; }
+  button.wide.link { text-align: left; padding: 0 16px; }
 </style>
 </head>
 <body>
@@ -254,9 +269,6 @@
   <button class="nav" data-view="brain" aria-label="Brain"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V8h14zM7 10h5v5H7z"/></svg><span class="badge" id="b-brain"></span></button>
   <button class="nav" data-view="approvals" aria-label="Approvals"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9z"/></svg><span class="badge" id="b-approvals"></span></button>
   <button class="nav" data-view="jobs" aria-label="Jobs"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4h4a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3V6a2 2 0 0 1 2-2zm0 3h4V6h-4zm-5 4v7h14v-7z"/></svg><span class="badge" id="b-jobs"></span></button>
-  <button class="nav" data-view="desks" aria-label="Desks"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg></button>
-  <button class="nav" data-view="mis" aria-label="MIS"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></button>
-  <button class="nav" data-view="connectors" aria-label="Connectors"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg></button>
   <button class="nav" id="navSettings" data-view="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94a7.3 7.3 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7 7 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2.4h-3.84a.5.5 0 0 0-.49.42l-.36 2.54a7.3 7.3 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.61.22L2.66 8.88a.5.5 0 0 0 .12.64l2.03 1.58a7.3 7.3 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .61.22l2.39-.96c.5.39 1.05.71 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.84a.5.5 0 0 0 .49-.42l.36-2.54a7 7 0 0 0 1.63-.94l2.39.96a.5.5 0 0 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg></button>
 </nav>
 <div id="main">
@@ -316,6 +328,7 @@
 </section>
 
 <section class="view" id="v-chat">
+  <button id="waitBar" class="hidden" aria-label="What is waiting on you"><span class="wt" id="waitText"></span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></button>
   <div class="thread" id="thread"><div class="empty">Loading...</div></div>
   <div id="chatDock">
     <div id="quoteBar" class="hidden"><div class="qb"><div id="quoteWho"></div><div id="quoteText"></div></div>
@@ -333,6 +346,19 @@
 <section class="view hidden" id="v-panel"><div class="scroll" id="panelBody"></div></section>
 
 <section class="view hidden" id="v-settings"><div class="scroll">
+  <div class="section"><h3>Phone alerts</h3>
+    <div class="card">
+      <div class="row"><label for="pushSw">Alerts on this phone</label><input type="checkbox" id="pushSw" class="switch" role="switch"></div>
+      <div class="sub" id="pushNote">When something needs your yes, or a job you asked for is done. Quiet 10 PM to 8 AM. One line, no names or numbers.</div>
+      <button class="wide" id="pushTest">Send a test alert</button>
+    </div>
+  </div>
+  <div class="section"><h3>Laptop status</h3>
+    <div class="ustrip" id="ustrip2" aria-label="Plan usage" style="justify-content:flex-start;padding:0 4px 8px"></div>
+    <button class="wide link" data-go="desks">Desks</button>
+    <button class="wide link" data-go="mis">MIS</button>
+    <button class="wide link" data-go="connectors">Live feeds</button>
+  </div>
   <div class="section"><h3>Listening</h3>
     <div class="card"><label for="stt">Speech recognition</label>
       <select id="stt" class="set-select"><option value="laptop">Parakeet, on the laptop</option><option value="google">Google, on the phone</option></select></div>
@@ -817,16 +843,19 @@ $('v-call').addEventListener('click', e => {
 // ---------------------------------------------------------------- icon rail: Harsh's mods, read from the PC
 let side = null, sideConn = null, sideReady = null;
 const panelHooks = {};   // what -> one-time handler (the + sheet's Brain list, a tag's job details)
-const titles = { call: 'Claude', brain: 'Brain', approvals: 'Approvals', jobs: 'Jobs', chat: 'Chief', desks: 'Desks', mis: 'MIS', connectors: 'Connectors', settings: 'Settings' };
+const titles = { call: 'Claude', brain: 'Brain', approvals: 'Approvals', jobs: 'Jobs', chat: 'Chief', desks: 'Desks', mis: 'MIS', connectors: 'Live feeds', settings: 'Settings' };
+const UNDER_SETTINGS = ['desks', 'mis', 'connectors'];   // J-89: off the rail, opened from Settings > Laptop status
 $('onCallChip').onclick = () => show('call');
-$('backBtn').onclick = () => show('chat');
+$('backBtn').onclick = () => show(UNDER_SETTINGS.includes(currentView) ? 'settings' : 'chat');
 document.querySelectorAll('.nav').forEach(b => b.onclick = () => show(b.dataset.view));
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
 
 function show(view) {
   if (view !== currentView) triage = null;
   currentView = view;
+  const railView = UNDER_SETTINGS.includes(view) ? 'settings' : view;
   document.querySelectorAll('.nav').forEach(b => {
-    const on = b.dataset.view === view;
+    const on = b.dataset.view === railView;
     b.classList.toggle('active', on);
     if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
@@ -836,11 +865,13 @@ function show(view) {
   $('v-chat').classList.toggle('hidden', view !== 'chat');
   $('v-panel').classList.toggle('hidden', view === 'call' || view === 'settings' || view === 'chat');
   $('onCallChip').classList.toggle('hidden', !inCall || view === 'call');
-  $('backBtn').classList.toggle('hidden', view !== 'call');
+  $('backBtn').classList.toggle('hidden', view !== 'call' && !UNDER_SETTINGS.includes(view));
+  $('backBtn').setAttribute('aria-label', UNDER_SETTINGS.includes(view) ? 'Back to Settings' : 'Back to Chat');
   $('barSub').classList.toggle('hidden', view !== 'chat' || !$('barSub').textContent);
   paintFull();
   if (view === 'chat') loadChat(true);
-  else if (view !== 'call' && view !== 'settings') loadPanel(view);
+  else if (view === 'settings') { try { paintPush(); } catch (e) {} }
+  else if (view !== 'call') loadPanel(view);
   try { paintChatDot(); } catch (e) {}   // before the chat code has run at start-up
 }
 
@@ -1468,7 +1499,7 @@ function usageStrip(u, target) {
   box.appendChild(c);
   return box;
 }
-function paintUsage(u) { usageNow = u || null; usageStrip(usageNow, $('ustrip')); }
+function paintUsage(u) { usageNow = u || null; usageStrip(usageNow, $('ustrip')); usageStrip(usageNow, $('ustrip2')); }
 let modelNow = 'sonnet';
 function paintModel(m) { if (!m) return; modelNow = m; $('modelChip').value = m; $('modelSet').value = m; }
 async function pickModel(v) {
@@ -1505,6 +1536,7 @@ function renderChat(d, force = false) {
   const sub = $('barSub');
   sub.textContent = d.working ? 'Working: ' + d.working : '';
   sub.classList.toggle('hidden', currentView !== 'chat' || !d.working);
+  paintWait(d);
   const th = $('thread');
   const sig = JSON.stringify([d.msgs || [], d.held || []]);
   if (!force && sig === chatSig && th.children.length) return;   // nothing new: keep his scroll place
@@ -1528,12 +1560,18 @@ function bubble(m) {
   }
   if (m.quote) b.appendChild(el('div', 'qt', m.quote));
   b.appendChild(document.createTextNode(m.text));
+  if (m.file && m.dl) {   // J-89: the file itself, on the phone
+    const fb = el('button', 'fbtn', fileGot[m.id] ? 'Open file' : 'Open file on the phone');
+    fb.onclick = () => openFile(m, fb);
+    b.appendChild(document.createElement('br')); b.appendChild(fb);
+  }
   b.appendChild(el('span', 'tm', metaLine(m)));
   replyGestures(b, m);
   return b;
 }
 function askBubble(m) {
   const w = el('div', 'askwrap');
+  w.dataset.mid = m.id;
   w.appendChild(askCard({ ...m.ask, id: m.id, text: m.text, quote: m.quote }, m.tag));
   w.appendChild(el('span', 'tm', metaLine(m)));
   replyGestures(w, m);
@@ -1711,6 +1749,128 @@ function newJobSheet() {   // a head and what to do -> Chief logs and routes it
     b.appendChild(send);
   });
 }
+
+// ---------------------------------------------------------------- J-89 (19 Oct): "Waiting on you" bar on top of the chat
+// asks for his yes, live changes held at the laptop and the open jobs, from the same chat pull; tap = the list, an ask
+// jumps to its card in the chat (or Approvals when it is older than the chat's last 80 messages)
+let waitData = null;
+function paintWait(d) {
+  const w = d.waiting || {}, held = d.held || [], jobs = w.jobs || [];
+  const asks = (w.asks || []).filter(a => !(a.id && apprGone[a.id]));
+  waitData = { asks, held, jobs };
+  const need = [];
+  if (asks.length) need.push(asks.length === 1 ? '1 needs your yes' : asks.length + ' need your yes');
+  if (held.length) need.push(held.length + ' at the laptop');
+  const jt = jobs.length ? jobs.length + (jobs.length === 1 ? ' job open' : ' jobs open') : '';
+  $('waitText').textContent = need.length ? 'Waiting on you: ' + need.join(' · ') + (jt ? ' · ' + jt : '') : (jt ? jt + ' · nothing needs you' : '');
+  $('waitBar').classList.toggle('need', need.length > 0);
+  $('waitBar').classList.toggle('hidden', !need.length && !jt);
+}
+$('waitBar').onclick = () => waitSheet();
+function waitSheet() {
+  const w = waitData || { asks: [], held: [], jobs: [] };
+  openSheet(b => {
+    b.appendChild(el('div', 'sheet-title', 'Waiting on you'));
+    if (!w.asks.length && !w.held.length) b.appendChild(el('div', 'sub', 'Nothing needs your yes right now.'));
+    if (w.asks.length) {
+      b.appendChild(el('h4', '', 'Your yes'));
+      w.asks.forEach(a => {
+        const c = el('button', 'card linkish pick', [a.n != null ? 'Ask ' + a.n : '', a.desk, a.job].filter(Boolean).join(' · ') + ': ' + a.text);
+        c.onclick = () => jumpTo(a); b.appendChild(c);
+      });
+    }
+    if (w.held.length) { b.appendChild(el('h4', '', 'At the laptop')); w.held.forEach(x => b.appendChild(el('div', 'card', `${x.title}: ${x.summary}`))); }
+    if (w.jobs.length) {
+      b.appendChild(el('h4', '', 'Jobs open'));
+      w.jobs.forEach(j => {
+        const c = el('button', 'card linkish pick'), row = el('div', 'row');
+        row.appendChild(el('b', '', `${j.id} · ${j.owner}`)); row.appendChild(el('span', 'tag st-' + j.status, j.status.replace(/-/g, ' ')));
+        c.appendChild(row); c.appendChild(el('div', 'sub', j.title));
+        c.onclick = () => { closeSheet(); jobDetail(j.id); }; b.appendChild(c);
+      });
+    }
+  });
+}
+function jumpTo(a) {
+  closeSheet();
+  const card = a.id && [...document.querySelectorAll('#thread .askwrap')].find(x => x.dataset.mid === a.id);
+  if (!card) { show('approvals'); return; }
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const c = card.querySelector('.card') || card; c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+}
+
+// ---------------------------------------------------------------- J-89: a file in the chat, opened on the phone
+// pieces over the sidebar link (the phone sends only the message id), then a preview for photos, Open and Save to phone
+const fileGot = {};   // message id -> {name, type, url}, kept while the app is open
+function unb64(s) { const b = atob(s), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+async function openFile(m, btn) {
+  if (fileGot[m.id]) { fileSheet(fileGot[m.id]); return; }
+  if (btn.disabled) return;
+  const was = btn.textContent; btn.disabled = true; btn.textContent = 'Getting...';
+  const parts = []; let total = 1, name = m.file, type = '';
+  for (let i = 0; i < total; i++) {
+    const r = await act({ what: 'download', id: m.id, seq: i });
+    if (!r.ok || typeof r.data !== 'string') { btn.disabled = false; btn.textContent = was; toast(r.msg || 'Could not get the file.', null, 4500); return; }
+    if (i === 0) { total = r.total || 1; name = r.name || name; type = r.type || ''; }
+    parts.push(unb64(r.data));
+    if (total > 1) btn.textContent = `Getting ${Math.round((i + 1) / total * 100)}%`;
+  }
+  const f = { name, type, url: URL.createObjectURL(new Blob(parts, { type: type || 'application/octet-stream' })) };
+  fileGot[m.id] = f; btn.disabled = false; btn.textContent = 'Open file'; fileSheet(f);
+}
+function fileSheet(f) {
+  openSheet(b => {
+    b.appendChild(el('div', 'sheet-title', f.name));
+    if (/^image\//.test(f.type)) { const img = el('img', 'fileprev'); img.src = f.url; img.alt = f.name; b.appendChild(img); }
+    const row = el('div', 'btns');
+    const open = el('a', 'btnlink', 'Open'); open.href = f.url; open.target = '_blank'; open.rel = 'noopener';
+    const save = el('a', 'btnlink yes', 'Save to phone'); save.href = f.url; save.download = f.name;
+    row.appendChild(open); row.appendChild(save); b.appendChild(row);
+  });
+}
+
+// ---------------------------------------------------------------- J-89: phone alerts (Web Push), switched in Settings
+// the laptop keeps the key pair and this phone's alert address in its secrets folder; the alert itself is one line
+const PUSH_OK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+function keyBytes(s) { const p = '='.repeat((4 - s.length % 4) % 4); return unb64((s + p).replace(/-/g, '+').replace(/_/g, '/')); }
+function swReady() { return Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error('no service worker')), 8000))]); }
+async function paintPush() {
+  const sw = $('pushSw'), note = $('pushNote');
+  if (!PUSH_OK) { sw.checked = false; sw.disabled = true; note.textContent = 'This browser cannot show alerts. Open the app in Chrome.'; return; }
+  let sub = null;
+  try { sub = await (await swReady()).pushManager.getSubscription(); } catch (e) {}
+  sw.checked = !!sub && Notification.permission === 'granted';
+  if (Notification.permission === 'denied') note.textContent = 'Notifications are blocked for this app: allow them in Chrome (site settings), then switch this on.';
+}
+$('pushSw').onchange = async () => {
+  const sw = $('pushSw'); sw.disabled = true;
+  if (sw.checked) sw.checked = await pushOn(); else await pushOff();
+  sw.disabled = false;
+};
+async function pushOn() {
+  if (!PUSH_OK) return false;
+  let perm = Notification.permission;
+  if (perm !== 'granted') perm = await Notification.requestPermission();   // first, while the tap still counts
+  if (perm !== 'granted') { toast('Alerts need notifications allowed for this app.', null, 4500); paintPush(); return false; }
+  const k = await act({ what: 'push', op: 'key' });
+  if (!k.ok || !k.key) { toast(k.msg || 'PC not reachable', null, 4000); return false; }
+  try {
+    const reg = await swReady();
+    let sub = await reg.pushManager.getSubscription();
+    if (sub) { try { await sub.unsubscribe(); } catch (e) {} }   // a fresh one, in case the laptop's key changed
+    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(k.key) });
+    const r = await act({ what: 'push', op: 'subscribe', sub: sub.toJSON() });
+    toast(r.ok ? 'Alerts on. Try "Send a test alert".' : 'Not on: ' + (r.msg || 'error'), null, 3500);
+    return !!r.ok;
+  } catch (e) { toast('Could not switch alerts on: ' + ((e && e.message) || e), null, 5000); return false; }
+}
+async function pushOff() {
+  let ep = '';
+  try { const sub = await (await swReady()).pushManager.getSubscription(); if (sub) { ep = sub.endpoint; await sub.unsubscribe(); } } catch (e) {}
+  const r = await act({ what: 'push', op: 'off', endpoint: ep });
+  toast(r.ok ? 'Alerts off' : 'Not changed: ' + (r.msg || 'error'), null, 2500);
+}
+$('pushTest').onclick = async () => { const r = await act({ what: 'push', op: 'test' }); toast(r.msg || (r.ok ? 'Sent' : 'Not sent'), null, 3500); };
 
 // ---------------------------------------------------------------- PC reachable dot and rail badges (the sidebar link's heartbeat)
 let lastPong = 0;
