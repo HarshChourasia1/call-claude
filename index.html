@@ -526,7 +526,7 @@ function sendMicNote() { if (micNote && !micNoteSent && conn && conn.open) { mic
 function getMic() {
   const ec = callEc;
   return navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: ec, noiseSuppression: false, autoGainControl: false } })
-    .then(s => { reportMic(s, ec); return s; });
+    .then(s => { reportMic(s, ec); micLast = s; return s; });
 }
 
 // ---- the echo gate (echo cancelling off): Claude's voice from the loudspeaker reaches the microphone.
@@ -609,6 +609,8 @@ async function startVad() {
 async function call() {
   setState('connecting'); hint.textContent = '';
   actx = new AudioContext();
+  // keep-alive (J-139): a tone far below hearing keeps the page counted as playing sound, so Chrome keeps it running in the background
+  try { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = 40; g.gain.value = 0.0003; o.connect(g); g.connect(actx.destination); o.start(); } catch (e) {}
   useVad = false;
   callEc = ecOn; echoBase = 0; echoN = 0; cand = null; recentRms = []; micNote = ''; micNoteSent = false;   // a fresh echo gate per call
   if (stt === 'laptop' && (h.get('stream') !== '1' || privCall)) {
@@ -635,6 +637,9 @@ async function call() {
   try { wake = await navigator.wakeLock?.request('screen'); } catch (e) {}
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({ title: 'Call with Claude', artist: 'Claude', artwork: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' }] });
+    try { navigator.mediaSession.playbackState = 'playing'; } catch (e) {}
+    // the notification and lock-screen controls: hang up, mute (names an older Chrome does not know are skipped)
+    [['hangup', () => $('end').click()], ['stop', () => $('end').click()], ['togglemicrophone', () => $('mute').click()]].forEach(([a, f]) => { try { navigator.mediaSession.setActionHandler(a, f); } catch (e) {} });
   }
   peer = new Peer({ debug: 1 });
   peer.on('error', e => {
@@ -698,6 +703,23 @@ async function call() {
   setTimeout(() => { if (!inCall && peer && !redialing) { hint.textContent = 'The PC did not answer. Is it on?'; hangup(false); } }, 20000);
 }
 
+// J-139: the app in the background. A phone may switch the microphone off for a page that is not on screen; nothing in a web page can
+// stop that. What this does: when the page is back and the microphone is dead or still muted, take a new one.
+let micLast = null, vadRestarting = false, deadTicks = 0;
+async function restartVad() {
+  if (!inCall || !useVad || vadRestarting) return;
+  vadRestarting = true;
+  try { vad && vad.destroy(); } catch (e) {} vad = null;
+  try { await startVad(); if (!muted && (!privCall || privAck)) vad.start(); hint.textContent = 'Microphone is back.'; }
+  catch (e) { hint.textContent = 'Could not get the microphone back. End the call and tap Talk.'; }
+  vadRestarting = false;
+}
+setInterval(() => {
+  const t = micLast && micLast.getAudioTracks()[0];
+  const dead = !!t && (t.readyState !== 'live' || t.muted);
+  if (inCall && useVad && !muted && !document.hidden && dead && (!privCall || privAck)) { if (++deadTicks >= 2) { deadTicks = 0; restartVad(); } } else deadTicks = 0;
+}, 2500);
+
 // J-139: a Personal call keeps nothing on the phone either: the words on screen go when it ends
 let privChoice = false, privCall = false, privAck = false, sttSaved = null;
 function endPrivate() {
@@ -755,6 +777,8 @@ function hangup(tell = true, keepWanting = false) {
   try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
   try { actx && actx.close(); } catch (e) {}
   try { wake && wake.release(); } catch (e) {}
+  try { navigator.mediaSession.playbackState = 'none'; } catch (e) {}
+  micLast = null;
   remote.srcObject = null; micLevel = remoteLevel = null;
   if (!keepWanting) {
     showCallControls(false); callStart = 0; setState('ready');
