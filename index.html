@@ -307,10 +307,11 @@
   <div id="hint"></div>
   <div id="afterRow" class="hidden"><button class="pill" id="repeatBtn">Repeat</button><button class="pill" id="shorterBtn">Shorter</button></div>
   <div id="opts">
-    <label class="pill">To <select id="toRole" aria-label="Who it is for">
-      <option value="chief">Chief</option><option value="ops">Ops</option><option value="dev">Dev</option><option value="growth">Growth</option>
-      <option value="data">Data</option><option value="research">Research</option><option value="pm">PM</option><option value="studio">Studio</option>
-      <option value="personal">Personal</option></select></label>
+    <label class="pill">To <select id="toRole" aria-label="Who Chief should give it to">
+      <option value="chief">Chief</option>
+      <optgroup label="Heads"><option value="ops">Ops</option><option value="dev">Dev</option><option value="data">Data</option></optgroup>
+      <optgroup label="Agents, via Chief"><option value="growth">Growth</option><option value="research">Research</option><option value="pm">PM</option><option value="studio">Studio</option></optgroup>
+      <option value="personal">Personal (private)</option></select></label>
     <button class="pill" data-opt="plan">Plan first</button><button class="pill" data-opt="quick">Quick answer</button>
     <button class="pill" data-opt="short">Short replies</button><button class="pill" data-opt="handsfree">Hands-free</button>
     <label class="pill">Model <select id="modelChip" aria-label="Call brain model, from the next call">
@@ -372,7 +373,7 @@
   <div class="section"><h3>Phone alerts</h3>
     <div class="card">
       <div class="row"><label for="pushSw">Alerts on this phone</label><input type="checkbox" id="pushSw" class="switch" role="switch"></div>
-      <div class="sub" id="pushNote">When something needs your yes, or a job you asked for is done. Quiet 10 PM to 8 AM. One line, no names or numbers.</div>
+      <div class="sub" id="pushNote">When something needs your yes, or a job you asked for is done. Quiet 10 PM to 8 AM. One line with the job id: no names, numbers or content.</div>
       <button class="wide" id="pushTest">Send a test alert</button>
     </div>
   </div>
@@ -1023,7 +1024,9 @@ function onPanelData(m) {
     connectorsView(body, d);
   }
 }
+const STANDING = /^0?[1-4] (Chief|Ops|Dev|Data)$/;   // J-141: the team since 23 Oct; agents and Personal are not desks
 function renderDesks(body, d) {
+    d = (d || []).filter(r => STANDING.test(String(r.title || '').trim()));
     const colour = s => s === 'working' ? 'var(--primary)' : s === 'waiting for you' ? 'var(--warn)' : s === 'closed' ? 'var(--line)' : 'var(--good)';
     body.appendChild(section('Desks', d, r => {
       const c = el('div', 'card'), row = el('div', 'row'), left = el('div', '');
@@ -1039,8 +1042,8 @@ function connectorsView(body, d) {
       const ok = f.age != null && f.age <= 10;
       row.appendChild(el('span', '', f.name));
       const wrap = el('div', 'row');
-      wrap.appendChild(el('span', 'sub', f.age == null ? 'down' : ok ? 'working' : `quiet ${f.age} min`));
-      const dot = el('span', 'dot'); dot.style.background = ok ? 'var(--good)' : 'var(--endbg)';
+      wrap.appendChild(el('span', 'sub', f.off ? 'off' : f.age == null ? 'down' : ok ? 'working' : `quiet ${f.age} min`));
+      const dot = el('span', 'dot'); dot.style.background = f.off ? 'var(--line)' : ok ? 'var(--good)' : 'var(--endbg)';   // off on purpose: grey, not red
       wrap.appendChild(dot); row.appendChild(wrap); c.appendChild(row); return c;
     }));
 }
@@ -1290,7 +1293,8 @@ function dayLabel(v) {
   if (m) return `${+m[3]} ${MONTHS[+m[2] - 1]}`;
   return { today: 'Today', tomorrow: 'Tomorrow', fri: 'Fri', mon: 'Mon' }[v] || v || '';
 }
-const GIVE = ['Ops', 'Dev', 'Growth', 'Data', 'Research', 'PM', 'Studio'];
+const GIVE = ['Chief', 'Ops', 'Dev', 'Data', 'Growth', 'Research', 'PM', 'Studio'];   // J-141: Chief picks, heads, then agents (Chief starts them)
+const GIVE_LABEL = r => r === 'Chief' ? 'Chief picks' : r;
 
 // ---------------------------------------------------------------- Brain: filters, swipe actions, notes, triage
 let brainData = null, brainFilter = '', triage = null;
@@ -1385,8 +1389,8 @@ function brainSheet(it) {
     b.appendChild(el('h4', '', 'Remind me'));
     const rr = btnRow([['Tomorrow', go('remind', 'tomorrow')], ['Mon', go('remind', 'mon')]]);
     rr.appendChild(datePick('Pick date', v => { closeSheet(); brainDo(it, 'remind', v); })); b.appendChild(rr);
-    b.appendChild(el('h4', '', 'Give to (becomes a job)'));
-    b.appendChild(btnRow(GIVE.map(r => [r, go('give', r)])));
+    b.appendChild(el('h4', '', 'Give to (Chief makes it a job)'));
+    b.appendChild(btnRow(GIVE.map(r => [GIVE_LABEL(r), go('give', r)])));
   });
 }
 function noteSheet(it) {
@@ -1500,7 +1504,7 @@ function renderApprovals() {
     body.appendChild(section(`Waiting for your answer (${list.length})`, list, a => askCard(a)));
     body.appendChild(el('div', 'refresh', 'Tap the text to edit it. Live-system changes still need Approve at the laptop.'));
   }
-  // a desk's held live-system change: shown only, approved in that desk at the laptop (no button here)
+  // a held live-system change (growth-live runs inside Chief since 23 Oct): shown only, approved at the laptop (no button here)
   if (held.length) body.appendChild(section(`Waiting at the laptop (${held.length})`, held, h => el('div', 'card', `Waiting at the laptop in ${h.title}: ${h.summary}`)));
 }
 // one ask (wa.py ask) as a card, the same in the Chat tab and in Approvals: Yes / No, the text editable in place with
@@ -1633,7 +1637,7 @@ const heat = pct => pct > 90 ? 'red' : pct > 70 ? 'amber' : 'ok';
 function usageStrip(u, target) {
   const box = target || el('div', 'ustrip');
   box.innerHTML = '';
-  if (!u) { box.appendChild(el('span', '', 'Usage shows once a desk runs deck 0.10.1')); return box; }
+  if (!u) { box.appendChild(el('span', '', 'No usage from the desks yet.')); return box; }
   const part = (label, w) => {
     if (!w) return;
     const sp = el('span', ''); sp.appendChild(document.createTextNode(label + ' '));
@@ -1764,7 +1768,7 @@ function msgMenu(m) {
 }
 function setReply(m) {
   replyTo = { id: m.id, who: m.who };
-  $('quoteWho').textContent = m.who === 'me' ? 'Replying to yourself' : 'Replying to ' + (m.tag ? m.tag.split(' · ')[0] : 'Chief');
+  $('quoteWho').textContent = m.who === 'me' ? 'Replying to yourself' : (m.tag && m.tag.split(' · ')[0] !== 'Chief' ? 'Replying to ' + m.tag.split(' · ')[0] + ' (via Chief)' : 'Replying to Chief');
   $('quoteText').textContent = (String(m.text).split('\n').find(x => x.trim()) || '').slice(0, 100);
   $('quoteBar').classList.remove('hidden');
   $('chatText').focus();
@@ -1781,7 +1785,7 @@ function paintSend() {
   if (mode === sendMode) return;
   sendMode = mode;
   $('sendBtn').innerHTML = mode === 'send' ? ICON_SEND : ICON_PHONE;
-  $('sendBtn').setAttribute('aria-label', mode === 'send' ? 'Send' : (inCall ? 'Back to the call' : 'Call Chief'));
+  $('sendBtn').setAttribute('aria-label', mode === 'send' ? 'Send' : (inCall ? 'Back to the call' : 'Call Claude'));
 }
 $('chatText').addEventListener('input', paintSend);
 paintSend();
@@ -1885,14 +1889,14 @@ function newJobSheet() {   // a head and what to do -> Chief logs and routes it
   let head = '';
   openSheet(b => {
     b.appendChild(el('div', 'sheet-title', 'New job'));
-    b.appendChild(el('h4', '', 'For'));
-    const row = btnRow(GIVE.map(r => [r, () => { head = r; [...row.children].forEach(x => x.classList.toggle('on', x.textContent === r)); }]));
+    b.appendChild(el('h4', '', 'For (Chief routes it)'));
+    const row = btnRow(GIVE.map(r => [GIVE_LABEL(r), () => { head = r; [...row.children].forEach(x => x.classList.toggle('on', x.textContent === GIVE_LABEL(r))); }]));
     b.appendChild(row);
     const ta = el('textarea', 'note'); ta.rows = 3; ta.placeholder = 'What to do (the keyboard mic works)'; b.appendChild(ta);
     const send = el('button', 'wide yes', 'Send to Chief');
     send.onclick = () => {
       const t = ta.value.trim();
-      if (!head) { toast('Pick a head first.', null, 2500); return; }
+      if (!head) { toast('Pick who it is for first.', null, 2500); return; }
       if (!t) { ta.focus(); return; }
       closeSheet(); later(`Job for ${head}: ${short(t, 30)}`, { what: 'newjob', head, text: t });
     };
