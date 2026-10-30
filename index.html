@@ -268,6 +268,37 @@
   #pForm { display: flex; align-items: center; gap: 8px; }
   #pForm .field { flex: 1; min-width: 0; padding: 2px 4px 2px 16px; }
   #pForm .field input { height: 42px; }
+
+  /* J-173 (31 Oct 2026): the home screen is the 5 desks, each with Chat, Mic and Call; Brain, Approvals, Jobs and
+     Settings moved into the menu at the top right (nothing removed). The old rail stays in the page, hidden. */
+  #rail { display: none; }
+  #homeList { padding: 4px 14px 24px; }
+  .dcard { background: var(--surface); border-radius: 16px; padding: 12px 14px 12px; margin-bottom: 10px; }
+  .dcard.private { background: none; border: 1px dashed var(--line); }
+  .dtop { display: flex; align-items: center; gap: 10px; cursor: pointer; min-height: 28px; }
+  .dname { font-family: "Source Serif 4", "Noto Serif", Georgia, serif; font-size: 19px; font-weight: 500; }
+  .dstate { flex: 1; min-width: 0; color: var(--dim); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dbadge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--primary); color: var(--onprimary);
+            font-size: 12px; font-weight: 600; line-height: 20px; text-align: center; }
+  .dbadge:empty { display: none; }
+  .dlast { color: var(--dim); font-size: 14px; margin: 4px 0 0 20px; cursor: pointer; display: -webkit-box; -webkit-line-clamp: 2;
+           -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+  .dlast:empty { display: none; }
+  .dbtns { display: flex; gap: 8px; margin-top: 10px; }
+  .dbtns button { flex: 1; height: 40px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); display: flex; align-items: center;
+                  justify-content: center; gap: 6px; font-size: 14px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;
+                  -webkit-touch-callout: none; }
+  .dbtns svg { width: 18px; height: 18px; }
+  .sdot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--line); }
+  .sdot.working { background: var(--primary); animation: dpulse 1.4s ease-in-out infinite; }
+  .sdot.idle { background: var(--good); }
+  .sdot.waiting { background: var(--warn); }
+  @keyframes dpulse { 50% { opacity: .35; } }
+  .rec { background: var(--endbg) !important; color: #fff !important; border-color: transparent !important; }
+  #micBtn, #pMic { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #voiceTag { font-size: 12px; color: var(--warn); padding: 0 6px 6px; }
+  #menuBtn { position: relative; }
+  #menuDot { position: absolute; top: 9px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
 </style>
 </head>
 <body>
@@ -286,8 +317,11 @@
   <button id="onCallChip" class="hidden">On call 0:00</button>
   <button id="updateChip" class="hidden">Update ready</button>
   <span id="pcDot" role="img" aria-label="PC not reachable" title="PC not reachable"></span>
+  <button class="icon-btn" id="menuBtn" aria-label="Menu: Brain, Approvals, Jobs, Settings"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg><span id="menuDot" class="hidden"></span></button>
   <button class="icon-btn" id="reload" aria-label="Reload the app"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/></svg></button>
 </div>
+
+<section class="view hidden" id="v-home"><div class="scroll" id="homeList"><div class="empty">Loading...</div></div></section>
 
 <section class="view hidden" id="v-call">
   <div class="ustrip" id="ustrip" aria-label="Plan usage"></div>
@@ -345,9 +379,11 @@
       <button type="button" class="mini" id="quoteX" aria-label="Cancel the reply"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>
     <div id="toRow"><button type="button" class="pill" id="toChip" aria-label="Who this chat is to">To: Chief</button></div>
     <div id="chatFlags" class="hidden"></div>
+    <div id="voiceTag" class="hidden">Voice note: check the words, then send.</div>
     <form id="chatForm" autocomplete="off">
       <button type="button" class="rbtn" id="plusBtn" aria-label="Add a photo, file, Brain item or job"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg></button>
       <div class="field"><input id="chatText" placeholder="Message Chief" enterkeyhint="send" aria-label="Message to Chief"></div>
+      <button type="button" class="rbtn" id="micBtn" aria-label="Hold to speak"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></svg></button>
       <button type="button" class="rbtn go" id="sendBtn" aria-label="Call Chief"></button>
     </form>
     <input type="file" id="filePick" class="hidden" aria-hidden="true" tabindex="-1">
@@ -361,6 +397,7 @@
     <div id="pBtns"><button type="button" class="pill" id="pTo">To: Personal</button><button type="button" class="pill" id="pClear">Clear</button></div>
     <form id="pForm" autocomplete="off">
       <div class="field"><input id="pText" placeholder="Message Personal" enterkeyhint="send" aria-label="Message to Personal"></div>
+      <button type="button" class="rbtn" id="pMic" aria-label="Hold to speak"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></svg></button>
       <button type="button" class="rbtn" id="pCall" aria-label="Call Personal"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button>
       <button type="submit" class="rbtn go" id="pSend" aria-label="Send"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20V4l19 8z"/></svg></button>
     </form>
@@ -727,7 +764,7 @@ function endPrivate() {
   if (!privCall) return;
   privCall = privAck = privChoice = false;
   if (sttSaved) { stt = sttSaved; sttSaved = null; }
-  $('name').textContent = 'Claude'; $('toRole').value = toRole;
+  $('name').textContent = deskLabel(toRole); $('toRole').value = toRole;
   log.innerHTML = '<div class="empty">Nothing said yet.</div>'; lastHeard = ''; recentClaude = [];
   $('heardText').textContent = ''; $('heardRow').classList.add('hidden'); hint.textContent = '';
 }
@@ -792,7 +829,8 @@ function startCall() {   // a new call starts clean: no transcript from earlier 
   show('call');
   if (inCall || wantCall) return;   // already on one: just show it
   privCall = privChoice;   // J-139: To = Personal makes this a private call: laptop speech recognition only
-  if (privCall) { sttSaved = stt; stt = 'laptop'; $('name').textContent = 'Personal'; }
+  if (privCall) { sttSaved = stt; stt = 'laptop'; $('name').textContent = 'Personal'; } else $('name').textContent = deskLabel(toRole);
+  $('barTitle').textContent = $('name').textContent;
   wantCall = true; muted = false; updateMute(); hideEndCard(); lastHeard = '';
   log.innerHTML = '<div class="empty">Nothing said yet.</div>'; caption.className = ''; caption.textContent = '';
   call(); paintFull();
@@ -800,7 +838,7 @@ function startCall() {   // a new call starts clean: no transcript from earlier 
 $('call').onclick = startCall;
 $('end').onclick = () => {   // ending a call returns to Chat (a private call: to the Personal pane, no summary card)
   const was = privCall; hangup(true); paintHold();
-  if (was) show('personal'); else { show('chat'); showEndCard(); }
+  if (was) show('personal'); else { openDesk(HEAD_KEYS.includes(toRole) ? toRole : 'chief'); showEndCard(); }
 };
 function updateMute() {
   $('mute').classList.toggle('on', muted);
@@ -927,10 +965,10 @@ $('v-call').addEventListener('click', e => {
 // ---------------------------------------------------------------- icon rail: Harsh's mods, read from the PC
 let side = null, sideConn = null, sideReady = null;
 const panelHooks = {};   // what -> one-time handler (the + sheet's Brain list, a tag's job details)
-const titles = { call: 'Claude', brain: 'Brain', approvals: 'Approvals', jobs: 'Jobs', chat: 'Chief', personal: 'Personal', desks: 'Desks', mis: 'MIS', connectors: 'Live feeds', settings: 'Settings' };
+const titles = { home: 'Claude', call: 'Claude', brain: 'Brain', approvals: 'Approvals', jobs: 'Jobs', chat: 'Chief', personal: 'Personal', desks: 'Desks', mis: 'MIS', connectors: 'Live feeds', settings: 'Settings' };
 const UNDER_SETTINGS = ['desks', 'mis', 'connectors'];   // J-89: off the rail, opened from Settings > Laptop status
 $('onCallChip').onclick = () => show('call');
-$('backBtn').onclick = () => show(UNDER_SETTINGS.includes(currentView) ? 'settings' : 'chat');
+$('backBtn').onclick = () => show(UNDER_SETTINGS.includes(currentView) ? 'settings' : 'home');   // J-173: back goes home
 document.querySelectorAll('.nav').forEach(b => b.onclick = () => show(b.dataset.view));
 document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
 
@@ -944,18 +982,20 @@ function show(view) {
     b.classList.toggle('active', on);
     if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
-  $('barTitle').textContent = titles[view];
+  $('barTitle').textContent = view === 'chat' ? DESK_NAMES[chatDesk] : view === 'call' ? $('name').textContent : titles[view];
+  $('v-home').classList.toggle('hidden', view !== 'home');
   $('v-call').classList.toggle('hidden', view !== 'call');
   $('v-settings').classList.toggle('hidden', view !== 'settings');
   $('v-chat').classList.toggle('hidden', view !== 'chat');
   $('v-personal').classList.toggle('hidden', view !== 'personal');
-  $('v-panel').classList.toggle('hidden', view === 'call' || view === 'settings' || view === 'chat' || view === 'personal');
+  $('v-panel').classList.toggle('hidden', ['home', 'call', 'settings', 'chat', 'personal'].includes(view));
   $('onCallChip').classList.toggle('hidden', !inCall || view === 'call');
-  $('backBtn').classList.toggle('hidden', view !== 'call' && view !== 'personal' && !UNDER_SETTINGS.includes(view));
-  $('backBtn').setAttribute('aria-label', UNDER_SETTINGS.includes(view) ? 'Back to Settings' : 'Back to Chat');
+  $('backBtn').classList.toggle('hidden', view === 'home');
+  $('backBtn').setAttribute('aria-label', UNDER_SETTINGS.includes(view) ? 'Back to Settings' : 'Back to the desks');
   $('barSub').classList.toggle('hidden', view !== 'chat' || !$('barSub').textContent);
   paintFull();
   if (view === 'personal') personalStart();
+  else if (view === 'home') loadHome();
   else if (view === 'chat') loadChat(true);
   else if (view === 'settings') { try { paintPush(); } catch (e) {} }
   else if (view !== 'call') loadPanel(view);
@@ -1006,7 +1046,8 @@ function onPanelData(m) {
   if (m.t !== 'panel') return;
   lastPong = Date.now(); paintDot();
   if (panelHooks[m.what]) { const f = panelHooks[m.what]; delete panelHooks[m.what]; f(m.data); return; }
-  if (m.what === 'chat') { if (currentView === 'chat' && m.data) renderChat(m.data); return; }
+  if (m.what === 'home') { if (m.data) renderHome(m.data); return; }
+  if (m.what === 'chat' || String(m.what).startsWith('chat:')) { if (currentView === 'chat' && m.data && m.what === 'chat:' + chatDesk) renderChat(m.data); return; }
   if (m.what === 'held') { heldData = m.data || []; if (currentView === 'approvals' && apprLoaded) renderApprovals(); return; }
   if (m.what !== currentView) return;
   const body = $('panelBody'), d = m.data;
@@ -1072,6 +1113,7 @@ $('toRole').onchange = () => {
   if (inCall || wantCall) { $('toRole').value = privCall ? 'personal' : toRole; return; }   // the line type is fixed once a call has started
   if ($('toRole').value === 'personal') { privChoice = true; return; }   // never saved: Personal is not a remembered choice
   privChoice = false; toRole = $('toRole').value; saveOpts(); sendFlags();
+  $('name').textContent = deskLabel(toRole);
 };
 paintOpts();
 
@@ -1182,13 +1224,17 @@ $('pCall').onclick = () => {
   if (inCall || wantCall) { toast('Already on a call.', null, 2500); return; }
   privChoice = true; $('toRole').value = 'personal'; startCall();
 };
-$('pTo').onclick = () => show('chat');
-$('toChip').onclick = () => openSheet(b => {
-  b.appendChild(el('div', 'sheet-title', 'Send to'));
-  [['Chief', () => closeSheet()], ['Personal', () => { closeSheet(); show('personal'); }]].forEach(([label, fn]) => {
-    const x = el('button', 'wide', label); x.onclick = fn; b.appendChild(x);
+function deskSheet() {   // J-173: which desk's thread
+  openSheet(b => {
+    b.appendChild(el('div', 'sheet-title', 'Open the chat with'));
+    Object.keys(DESK_NAMES).forEach(k => {
+      const x = el('button', 'wide', DESK_NAMES[k] + (HEAD_KEYS.includes(k) ? ' (via Chief)' : k === 'personal' ? ' (private)' : ''));
+      x.onclick = () => { closeSheet(); openDesk(k); }; b.appendChild(x);
+    });
   });
-});
+}
+$('pTo').onclick = deskSheet;
+$('toChip').onclick = deskSheet;
 
 // ---------------------------------------------------------------- actions: request and answer over the sidebar link
 let rid = 0;
@@ -1677,7 +1723,7 @@ async function loadChat(first) {
   if (currentView !== 'chat') return;
   const th = $('thread');
   if (first && !th.children.length) th.appendChild(el('div', 'empty', 'Loading...'));
-  try { await ask({ t: 'panel', what: 'chat' }); }
+  try { await ask({ t: 'panel', what: 'chat:' + chatDesk }); }
   catch (e) { if (first) { th.innerHTML = ''; th.appendChild(el('div', 'empty', 'Could not reach the PC. Is it on?')); } }
   chatTimer = setTimeout(() => { if (!document.hidden) loadChat(false); else chatTimer = setTimeout(() => loadChat(false), 4000); }, 2000);   // 2 s while open (J-43)
 }
@@ -1687,9 +1733,12 @@ async function loadChat(first) {
 let lastChat = null, replyTo = null;
 function renderChat(d, force = false) {
   lastChat = d;
+  if (!document.hidden) markSeen(chatDesk);
   const sub = $('barSub');
-  sub.textContent = d.working ? 'Working: ' + d.working : '';
-  sub.classList.toggle('hidden', currentView !== 'chat' || !d.working);
+  // a head's thread shows only that head at work; Chief's shows whoever is
+  const working = d.working && (chatDesk === 'chief' || String(d.working).toLowerCase().startsWith(chatDesk)) ? d.working : '';
+  sub.textContent = working ? 'Working: ' + working : '';
+  sub.classList.toggle('hidden', currentView !== 'chat' || !working);
   paintWait(d);
   const th = $('thread');
   const sig = JSON.stringify([d.msgs || [], d.held || []]);
@@ -1789,18 +1838,18 @@ function paintSend() {
 }
 $('chatText').addEventListener('input', paintSend);
 paintSend();
-$('sendBtn').onclick = () => { if ($('chatText').value.trim()) sendChat(); else startCall(); };
+$('sendBtn').onclick = () => { if ($('chatText').value.trim()) sendChat(); else callDeskNow(chatDesk); };
 $('chatForm').onsubmit = e => { e.preventDefault(); sendChat(); };   // Enter sends; it never starts a call
 async function sendChat() {
   const t = $('chatText').value.trim();
   if (!t) return;
-  const rt = replyTo;
-  $('chatText').value = ''; paintSend(); clearReply();
+  const rt = replyTo, voice = voiceFlag;
+  $('chatText').value = ''; paintSend(); clearReply(); voiceOn(false);
   const th = $('thread'); const b = el('div', 'bub me');
   if (rt) b.appendChild(el('div', 'qt', $('quoteText').textContent));
   b.appendChild(document.createTextNode(t)); b.appendChild(el('span', 'tm', 'sending...')); th.appendChild(b); th.scrollTop = th.scrollHeight;
-  const r = await act({ what: 'chat', text: t, reply_to: rt ? rt.id : '', flags: { plan: opts.plan, quick: opts.quick, short: opts.short } });
-  if (!r.ok) { b.lastChild.textContent = 'not sent: ' + (r.msg || 'error'); $('chatText').value = t; paintSend(); return; }
+  const r = await act({ what: 'chat', text: t, desk: chatDesk, voice, reply_to: rt ? rt.id : '', flags: { plan: opts.plan, quick: opts.quick, short: opts.short } });
+  if (!r.ok) { b.lastChild.textContent = 'not sent: ' + (r.msg || 'error'); $('chatText').value = t; paintSend(); voiceOn(voice); return; }
   chatSig = ''; loadChat(false);
 }
 
@@ -1861,7 +1910,7 @@ async function sendFile(f) {   // in pieces over the sidebar link; the PC saves 
   for (let i = 0; i < total; i++) {
     const data = b64(await f.slice(i * CHUNK, (i + 1) * CHUNK).arrayBuffer());
     const last = i === total - 1;
-    const r = await act({ what: 'upload', uid, seq: i, total, size: f.size, name: f.name, data, ...(last ? { caption, reply_to: rt ? rt.id : '' } : {}) });
+    const r = await act({ what: 'upload', uid, seq: i, total, size: f.size, name: f.name, data, ...(last ? { caption, reply_to: rt ? rt.id : '', desk: chatDesk } : {}) });
     if (!r.ok) { tm.textContent = 'not sent: ' + (r.msg || 'error'); if (caption && !$('chatText').value) { $('chatText').value = caption; paintSend(); } return; }
     tm.textContent = r.done ? 'sent' : `sending ${Math.round((i + 1) / total * 100)}%`;
   }
@@ -2038,12 +2087,173 @@ async function refreshCounts() {
   if (!r.ok || !r.data) return;
   const set = (id, n) => { $(id).textContent = n ? String(n) : ''; };
   set('b-brain', r.data.overdue); set('b-approvals', (r.data.approvals || 0) + (r.data.held || 0)); set('b-jobs', r.data.jobs);
+  paintMenuDot();
   paintModel(r.data.model); paintUsage(r.data.usage);
   chatLast = r.data.chat_last || ''; paintChatDot();
 }
 setInterval(beat, 20000); setInterval(paintDot, 5000); setInterval(refreshCounts, 20000);   // badges and the Chat dot every 20 s (was 60 s, J-43)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
 setTimeout(() => { beat(); refreshCounts(); }, 800);
+
+// ---------------------------------------------------------------- home: the 5 desks (J-173, 31 Oct 2026)
+// Chief, Ops, Dev and Data each have their own thread (a message there goes to Chief tagged with that desk, the head's
+// answer comes back into it); Personal is walled off: its own pane and Claude on the PC, no preview, no count.
+const DESK_NAMES = { chief: 'Chief', ops: 'Ops', dev: 'Dev', data: 'Data', personal: 'Personal' };
+const HEAD_KEYS = ['ops', 'dev', 'data'];
+const ICON_CHAT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/></svg>';
+const ICON_MIC = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></svg>';
+const STATE_TEXT = { working: 'working', idle: 'free', 'waiting for you': 'waiting for you', closed: 'not open' };
+let chatDesk = 'chief', homeTimer = null, homeGot = false;
+const deskLabel = k => DESK_NAMES[k] || 'Claude';
+const istNow = () => new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 19);   // the PC's times are IST, no zone
+function seenOf(d) { try { return localStorage.getItem('seen_' + d) || ''; } catch (e) { return ''; } }
+function markSeen(d) { try { localStorage.setItem('seen_' + d, istNow()); } catch (e) {} }
+async function loadHome() {
+  clearTimeout(homeTimer);
+  if (currentView !== 'home') return;
+  try { await ask({ t: 'panel', what: 'home' }); }
+  catch (e) { if (!homeGot) { homeSig = ''; $('homeList').innerHTML = ''; $('homeList').appendChild(el('div', 'empty', 'Could not reach the PC. Is it on?')); } }
+  homeTimer = setTimeout(loadHome, document.hidden ? 15000 : 5000);
+}
+let homeSig = '';
+function renderHome(d) {
+  if (currentView !== 'home') return;
+  homeGot = true;
+  // redraw only when something changed, and never under a held Mic: a rebuilt card drops the tap or the recording
+  const sig = JSON.stringify(d) + d.map(c => seenOf(c.private ? 'personal' : c.desk)).join('|');
+  if (note || sig === homeSig) return;
+  homeSig = sig;
+  const list = $('homeList'); list.innerHTML = '';
+  d.forEach(c => list.appendChild(deskCard(c)));
+}
+function cardBtn(icon, label) { const b = el('button', ''); b.type = 'button'; b.innerHTML = icon; b.appendChild(el('span', '', label)); b.setAttribute('aria-label', label); return b; }
+function deskCard(c) {
+  const k = c.private ? 'personal' : c.desk;
+  const card = el('div', 'dcard' + (c.private ? ' private' : '')), top = el('div', 'dtop');
+  top.appendChild(el('span', 'sdot ' + ({ working: 'working', idle: 'idle', 'waiting for you': 'waiting' }[c.state] || '')));
+  top.appendChild(el('span', 'dname', c.name));
+  if (c.private) top.appendChild(el('span', 'dstate', c.state === 'working' ? 'answering' : 'private'));
+  else {
+    top.appendChild(el('span', 'dstate', [STATE_TEXT[c.state] || c.state, c.working || (c.jobs ? c.jobs + (c.jobs > 1 ? ' open jobs' : ' open job') : '')].filter(Boolean).join(' · ')));
+    if (!seenOf(k)) markSeen(k);   // a new phone starts with nothing unread
+    const n = (c.claude_at || []).filter(t => t > seenOf(k)).length;
+    top.appendChild(el('span', 'dbadge', n ? (n > 9 ? '9+' : String(n)) : ''));
+  }
+  top.onclick = () => openDesk(k);
+  card.appendChild(top);
+  if (!c.private) {
+    const l = el('div', 'dlast', c.last ? (c.last_who === 'me' ? 'You: ' : '') + c.last + (c.time ? ' · ' + c.time : '') : '');
+    l.onclick = () => openDesk(k); card.appendChild(l);
+  }
+  const btns = el('div', 'dbtns'), chat = cardBtn(ICON_CHAT, 'Chat'), mic = cardBtn(ICON_MIC, 'Mic'), ring = cardBtn(ICON_PHONE, 'Call');
+  chat.onclick = () => openDesk(k);
+  holdToSpeak(mic, k);
+  ring.onclick = () => callDeskNow(k);
+  btns.append(chat, mic, ring); card.appendChild(btns);
+  return card;
+}
+function openDesk(k) {
+  if (k === 'personal') { show('personal'); return; }
+  if (!DESK_NAMES[k]) k = 'chief';
+  if (k !== chatDesk) { chatDesk = k; chatSig = ''; lastChat = null; $('thread').innerHTML = ''; delete $('thread').dataset.seen; clearReply(); voiceOn(false); $('chatText').value = ''; paintSend(); }
+  const n = DESK_NAMES[chatDesk], head = HEAD_KEYS.includes(chatDesk);
+  $('chatText').placeholder = head ? `Message ${n} (via Chief)` : 'Message Chief';
+  $('chatText').setAttribute('aria-label', $('chatText').placeholder);
+  $('toChip').textContent = head ? `To: ${n}, via Chief` : 'To: Chief';
+  show('chat');
+}
+function callDeskNow(k) {   // the card's Call: the live call screen, titled with that desk
+  if (inCall || wantCall) { show('call'); return; }
+  if (k === 'personal') { privChoice = true; $('toRole').value = 'personal'; startCall(); return; }
+  privChoice = false; toRole = HEAD_KEYS.includes(k) ? k : 'chief'; $('toRole').value = toRole; saveOpts();
+  startCall();
+}
+$('menuBtn').onclick = () => openSheet(b => {
+  b.appendChild(el('div', 'sheet-title', 'Menu'));
+  const n = id => $(id).textContent;
+  [['Brain', 'brain', n('b-brain') ? n('b-brain') + ' overdue' : ''], ['Approvals', 'approvals', n('b-approvals') ? n('b-approvals') + ' waiting' : ''],
+   ['Jobs', 'jobs', n('b-jobs') ? n('b-jobs') + ' open' : ''], ['Settings', 'settings', '']].forEach(([label, v, extra]) => {
+    const x = el('button', 'wide', label + (extra ? ' · ' + extra : '')); x.onclick = () => { closeSheet(); show(v); }; b.appendChild(x);
+  });
+});
+function paintMenuDot() { $('menuDot').classList.toggle('hidden', !$('b-approvals').textContent); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'home') loadHome(); });
+
+// ---------------------------------------------------------------- hold to speak (J-173): the laptop's Parakeet writes it down,
+// he checks the words in the box and sends. Recorded in memory and sent in pieces; nothing is kept on the phone or the PC.
+let voiceFlag = false, note = null;
+function voiceOn(on) { voiceFlag = !!on; $('voiceTag').classList.toggle('hidden', !voiceFlag); }
+$('chatText').addEventListener('input', () => { if (!$('chatText').value.trim()) voiceOn(false); });
+async function noteStart(btn, target) {
+  if (note) return;
+  if (inCall || wantCall) { toast('On a call: just speak.', null, 2500); return; }
+  const n = note = { bufs: [], target, btn, t0: Date.now(), stop: false };
+  btn.classList.add('rec');
+  try {
+    n.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+    if (n.stop) { noteClean(n); return; }   // let go before the mic opened
+    n.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    n.rate = n.ctx.sampleRate;
+    const src = n.ctx.createMediaStreamSource(n.stream);
+    n.node = n.ctx.createScriptProcessor(4096, 1, 1);
+    n.node.onaudioprocess = e => { if (!n.stop) n.bufs.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+    src.connect(n.node); n.node.connect(n.ctx.destination);
+    toast('Listening... let go to stop', null, 95000);
+  } catch (e) { noteClean(n); if (note === n) note = null; toast('Microphone not allowed.', null, 3000); }
+}
+function noteClean(n) {
+  try { n.node && n.node.disconnect(); } catch (e) {}
+  try { n.stream && n.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+  try { n.ctx && n.ctx.close(); } catch (e) {}
+  n.btn.classList.remove('rec');
+}
+function to16k(bufs, rate) {
+  const len = bufs.reduce((a, b) => a + b.length, 0), all = new Float32Array(len);
+  let o = 0; bufs.forEach(b => { all.set(b, o); o += b.length; });
+  const ratio = rate / 16000, out = new Float32Array(Math.floor(len / ratio));
+  for (let i = 0; i < out.length; i++) {
+    const a = Math.floor(i * ratio), z = Math.min(len, Math.floor((i + 1) * ratio));
+    let s = 0; for (let j = a; j < z; j++) s += all[j];
+    out[i] = s / Math.max(1, z - a);
+  }
+  return out;
+}
+async function noteStop() {
+  const n = note; if (!n) return;
+  note = null; n.stop = true; hideToast(); noteClean(n);
+  if (Date.now() - n.t0 < 400 || !n.bufs.length) { toast('Hold the mic, speak, then let go.', null, 2500); return; }
+  const wav = new Uint8Array(wav16(to16k(n.bufs, n.rate))); n.bufs = [];
+  toast('Writing it down...', null, 60000);
+  const sid = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), total = Math.ceil(wav.length / CHUNK);
+  let r = { ok: false, msg: 'Nothing recorded.' };
+  for (let i = 0; i < total; i++) {
+    r = await act({ what: 'stt', sid, seq: i, last: i === total - 1, data: b64(wav.subarray(i * CHUNK, (i + 1) * CHUNK)) });
+    if (!r.ok) break;
+  }
+  hideToast();
+  if (!r.ok) { toast(r.msg || 'Could not write it down.', null, 3000); return; }
+  if (!r.text) { toast('Heard nothing. Try again, a bit closer.', null, 3000); return; }
+  noteFill(n.target, r.text);
+}
+function noteFill(target, text) {
+  if (target === 'personal') {
+    if (currentView !== 'personal') show('personal');
+    const p = $('pText'); p.value = (p.value.trim() ? p.value.trim() + ' ' : '') + text; p.focus(); return;
+  }
+  if (currentView !== 'chat' || chatDesk !== target) openDesk(target);
+  const c = $('chatText'); c.value = (c.value.trim() ? c.value.trim() + ' ' : '') + text; paintSend(); voiceOn(true); c.focus();
+}
+function holdToSpeak(btn, target) {   // target: a desk key, or a function giving one
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault(); try { btn.setPointerCapture(e.pointerId); } catch (x) {}
+    noteStart(btn, typeof target === 'function' ? target() : target);
+  });
+  ['pointerup', 'pointercancel'].forEach(ev => btn.addEventListener(ev, () => noteStop()));
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+}
+holdToSpeak($('micBtn'), () => chatDesk);
+holdToSpeak($('pMic'), 'personal');
+document.addEventListener('visibilitychange', () => { if (document.hidden && note) noteStop(); });
 
 // ---------------------------------------------------------------- reload and updates
 // The reload button loads the latest version. The app also checks for a newer version every two minutes and, when one
@@ -2066,8 +2276,12 @@ async function checkUpdate() {
 checkUpdate(); setInterval(checkUpdate, 120000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 
-if (h.get('autocall') === '1') { if (h.get('private') === '1') privChoice = true; startCall(); }   // only for the PC's own test (test_call.py); a phone never has it in its link
-else show('chat');   // Chat is the main page (J-19, 14 Oct)
+if (h.get('autocall') === '1') {   // only for the PC's own test (test_call.py); a phone never has it in its link
+  if (h.get('private') === '1') privChoice = true;
+  else if (HEAD_KEYS.includes(h.get('desk'))) { toRole = h.get('desk'); $('toRole').value = toRole; }   // a call from that desk's card
+  startCall();
+}
+else show('home');   // the 5 desks are the main page (J-173, 31 Oct; Chat was, from J-19 on 14 Oct)
 </script>
 </body>
 </html>
