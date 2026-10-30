@@ -1228,7 +1228,7 @@ function deskSheet() {   // J-173: which desk's thread
   openSheet(b => {
     b.appendChild(el('div', 'sheet-title', 'Open the chat with'));
     Object.keys(DESK_NAMES).forEach(k => {
-      const x = el('button', 'wide', DESK_NAMES[k] + (HEAD_KEYS.includes(k) ? ' (via Chief)' : k === 'personal' ? ' (private)' : ''));
+      const x = el('button', 'wide', DESK_NAMES[k] + (HEAD_KEYS.includes(k) && !directDesks ? ' (via Chief)' : k === 'personal' ? ' (private)' : ''));
       x.onclick = () => { closeSheet(); openDesk(k); }; b.appendChild(x);
     });
   });
@@ -1733,6 +1733,7 @@ async function loadChat(first) {
 let lastChat = null, replyTo = null;
 function renderChat(d, force = false) {
   lastChat = d;
+  if (!!d.direct !== directDesks) { directDesks = !!d.direct; paintTo(); }
   if (!document.hidden) markSeen(chatDesk);
   const sub = $('barSub');
   // a head's thread shows only that head at work; Chief's shows whoever is
@@ -1817,7 +1818,7 @@ function msgMenu(m) {
 }
 function setReply(m) {
   replyTo = { id: m.id, who: m.who };
-  $('quoteWho').textContent = m.who === 'me' ? 'Replying to yourself' : (m.tag && m.tag.split(' · ')[0] !== 'Chief' ? 'Replying to ' + m.tag.split(' · ')[0] + ' (via Chief)' : 'Replying to Chief');
+  $('quoteWho').textContent = m.who === 'me' ? 'Replying to yourself' : (m.tag && m.tag.split(' · ')[0] !== 'Chief' ? 'Replying to ' + m.tag.split(' · ')[0] + (directDesks && HEAD_KEYS.includes(chatDesk) ? '' : ' (via Chief)') : 'Replying to Chief');
   $('quoteText').textContent = (String(m.text).split('\n').find(x => x.trim()) || '').slice(0, 100);
   $('quoteBar').classList.remove('hidden');
   $('chatText').focus();
@@ -2156,11 +2157,16 @@ function openDesk(k) {
   if (k === 'personal') { show('personal'); return; }
   if (!DESK_NAMES[k]) k = 'chief';
   if (k !== chatDesk) { chatDesk = k; chatSig = ''; lastChat = null; $('thread').innerHTML = ''; delete $('thread').dataset.seen; clearReply(); voiceOn(false); $('chatText').value = ''; paintSend(); }
-  const n = DESK_NAMES[chatDesk], head = HEAD_KEYS.includes(chatDesk);
-  $('chatText').placeholder = head ? `Message ${n} (via Chief)` : 'Message Chief';
-  $('chatText').setAttribute('aria-label', $('chatText').placeholder);
-  $('toChip').textContent = head ? `To: ${n}, via Chief` : 'To: Chief';
+  paintTo();
   show('chat');
+}
+// J-174: with "direct_desks" on (the server says so in each thread) a head's thread goes straight to that head
+let directDesks = false;
+function paintTo() {
+  const n = DESK_NAMES[chatDesk], via = HEAD_KEYS.includes(chatDesk) && !directDesks;
+  $('chatText').placeholder = via ? `Message ${n} (via Chief)` : `Message ${n}`;
+  $('chatText').setAttribute('aria-label', $('chatText').placeholder);
+  $('toChip').textContent = via ? `To: ${n}, via Chief` : `To: ${n}`;
 }
 function callDeskNow(k) {   // the card's Call: the live call screen, titled with that desk
   if (inCall || wantCall) { show('call'); return; }
